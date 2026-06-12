@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "node -e \"const fs=require('fs'); if(!fs.existsSync('.env')) fs.writeFileSync('.env', 'DATABASE_URL=file:./dev.db');\" && npx prisma generate && next build",
+    "build": "node -e \"const fs=require('fs'); fs.writeFileSync('.env', 'DATABASE_URL=file:/app/data/prod.db\\nAUTH_SECRET=weaweb_super_secret_key_8h3j2k1l9m0n4b5v6c7x8z\\nAUTH_URL=https://weaweb-app-production.up.railway.app');\" && npx prisma generate && next build",
     "start": "npx prisma db push && concurrently \"next start\" \"tsx src/worker.ts\"",
     "start:web": "next start",
     "lint": "eslint",
