@@ -20,8 +20,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
       {/* Executive Vertical Sidebar */}
       <aside className="w-64 bg-card border-r border-border h-screen sticky top-0 flex flex-col z-50 shadow-sm hidden md:flex">
         <div className="px-6 py-8 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-[0.25rem] flex items-center justify-center bg-white p-0.5 overflow-hidden">
-            <img src="/logo.png" alt="Weaweb Logo" className="w-full h-full object-contain" />
+          <div className="w-10 h-10 flex items-center justify-center overflow-hidden">
+            <img src="/logo.png" alt="Weaweb Logo" className="w-full h-full object-contain drop-shadow-sm" />
           </div>
           <span className="text-xl font-bold tracking-tight text-foreground">Weaweb</span>
         </div>
