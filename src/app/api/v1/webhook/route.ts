@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { campaignQueue } from "@/lib/queue"
-
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || "weaweb_secret_token"
 
 export async function GET(req: Request) {
@@ -100,12 +98,20 @@ export async function POST(req: Request) {
                 }
 
                 if (isMatch) {
-                    // Send Auto-Reply via Queue to prevent blocking Webhook response
-                    await campaignQueue.add("send-auto-reply", {
-                        tenantId,
-                        contactId: contact.id,
-                        content: rule.replyText
-                    });
+                    // Send Auto-Reply via local worker
+                    try {
+                        await fetch("http://127.0.0.1:4000/send", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                tenantId,
+                                phoneNumber: contact.phoneNumber,
+                                content: rule.replyText
+                            })
+                        });
+                    } catch (e) {
+                        console.error("[Webhook] Failed to forward auto-reply to worker", e);
+                    }
                     break; // Only match one rule per message
                 }
             }
