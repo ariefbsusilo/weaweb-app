@@ -4,6 +4,7 @@ buildCommand = "npm run build"
 
 [build.env]
 NIXPACKS_NODE_VERSION = "20"
+DATABASE_URL = "file:/app/data/prod.db"
 
 [deploy]
 startCommand = "npm run start"
