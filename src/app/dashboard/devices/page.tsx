@@ -207,7 +207,7 @@ export default function DevicesPage() {
             <DialogHeader className="w-full text-center mb-4">
               <DialogTitle className="font-extrabold text-2xl tracking-tight text-center w-full">Connect Device</DialogTitle>
               <DialogDescription className="font-medium text-muted-foreground text-center">
-                Scan this QR Code with your WhatsApp app to connect <strong className="text-foreground">{selectedDevice?.name} ({selectedDevice?.phone})</strong>.
+                Scan this QR Code with your WhatsApp app to connect <strong className="text-foreground">{selectedDevice?.name} ({selectedDevice?.phoneNumber})</strong>.
               </DialogDescription>
             </DialogHeader>
             <div className="w-64 h-64 bg-white rounded-xl border-4 border-primary flex items-center justify-center p-4 mb-4">
