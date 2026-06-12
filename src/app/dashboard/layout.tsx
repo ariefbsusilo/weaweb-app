@@ -42,9 +42,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
           
           <form action={async () => {
             "use server"
-            await signOut()
+            await signOut({ redirectTo: "/login" })
           }} className="mt-2 flex gap-2">
-            <Button variant="ghost" className="flex-1 justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-[0.35rem] h-9">
+            <Button type="submit" variant="ghost" className="flex-1 justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-[0.35rem] h-9">
               Log out
             </Button>
             <ThemeToggle />

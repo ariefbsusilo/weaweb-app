@@ -10,6 +10,7 @@ export function ThemeToggle() {
 
   return (
     <Button
+      type="button"
       variant="ghost"
       size="icon"
       className="rounded-[0.25rem] text-muted-foreground hover:text-foreground"
