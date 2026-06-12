@@ -20,13 +20,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     // Call worker to start session
     try {
-      await fetch("http://127.0.0.1:4000/action", {
+      const res = await fetch("http://127.0.0.1:4000/action", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ deviceId: device.id, tenantId, action: "start" })
+        body: JSON.stringify({ deviceId: device.id, tenantId, action: "start" }),
       });
+      if (!res.ok) {
+        console.error("[NextJS] Worker returned", res.status, await res.text());
+        throw new Error("Worker returned " + res.status);
+      }
     } catch (e) {
       console.error("[NextJS] Failed to call worker action", e);
+      return NextResponse.json({ success: false, error: "Worker is currently starting up, please try again in a few seconds." }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, message: "Connection process started" });

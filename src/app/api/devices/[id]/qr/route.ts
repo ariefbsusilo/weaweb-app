@@ -18,10 +18,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     let qr = null;
     try {
       const res = await fetch(`http://127.0.0.1:4000/qr/${deviceId}`);
+      if (!res.ok) {
+        throw new Error("Worker returned " + res.status);
+      }
       const data = await res.json();
       qr = data.qr;
     } catch (e) {
       console.error("[NextJS] Failed to fetch QR from worker", e);
+      return NextResponse.json({ success: false, error: "Failed to connect to worker to retrieve QR code." }, { status: 500 });
     }
 
     return NextResponse.json({ 

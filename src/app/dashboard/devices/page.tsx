@@ -47,13 +47,25 @@ export default function DevicesPage() {
   const [selectedDevice, setSelectedDevice] = useState<any>(null);
   const [liveQr, setLiveQr] = useState<string | null>(null);
 
-  const openConnectModal = async (device: any) => {
+  const handleConnect = async (device: any) => {
     setSelectedDevice(device);
-    setIsConnectModalOpen(true);
     setLiveQr(null);
-    
-    // Trigger connection
-    await fetch(`/api/devices/${device.id}/connect`, { method: "POST" });
+    setIsConnectModalOpen(true);
+
+    try {
+      const res = await fetch(`/api/devices/${device.id}/connect`, {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        const json = await res.json();
+        alert(json.error || "Failed to connect to worker");
+        setIsConnectModalOpen(false);
+      }
+    } catch (error) {
+      console.error("Failed to start connection process", error);
+      alert("Network error while trying to connect.");
+      setIsConnectModalOpen(false);
+    }
   };
 
   useEffect(() => {
@@ -292,7 +304,7 @@ export default function DevicesPage() {
                         <Button 
                           size="sm" 
                           className="bg-[#22c55e] hover:bg-[#16a34a] text-white font-bold rounded-[0.25rem] h-8 px-3"
-                          onClick={() => openConnectModal(device)}
+                          onClick={() => handleConnect(device)}
                         >
                           <Link2 className="w-3.5 h-3.5 mr-1.5" /> Connect
                         </Button>
