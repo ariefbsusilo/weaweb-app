@@ -2,8 +2,8 @@ import express from "express";
 import cors from "cors";
 import { PrismaClient } from "@prisma/client";
 import { initWhatsApp, sendMessageWA, logoutWA, qrStore, validateNumberWA, getGroupsWA, deleteMessageWA, simulateTypingWA } from "./lib/whatsapp";
+import { prisma } from "./lib/prisma";
 
-const prisma = new PrismaClient();
 const app = express();
 
 app.use(cors());
@@ -209,18 +209,22 @@ async function startCampaignPoller() {
 async function startup() {
   console.log("🚀 Weaweb Worker (No-Redis) starting on port 4000...");
   
-  const devices = await prisma.device.findMany({
-    where: { status: { in: ["connect", "connecting"] } }
-  });
-  
-  for (const d of devices) {
-    console.log(`[WA] Auto-starting session for device: ${d.id}`);
-    await initWhatsApp(d.id, d.tenantId);
-  }
-
   app.listen(4000, "0.0.0.0", () => {
     console.log("✅ Worker HTTP API listening on http://0.0.0.0:4000");
   });
+
+  try {
+    const devices = await prisma.device.findMany({
+      where: { status: { in: ["connect", "connecting"] } }
+    });
+    
+    for (const d of devices) {
+      console.log(`[WA] Auto-starting session for device: ${d.id}`);
+      initWhatsApp(d.id, d.tenantId).catch(console.error);
+    }
+  } catch (e) {
+    console.error("Failed to auto-start devices:", e);
+  }
 
   startCampaignPoller();
 }
