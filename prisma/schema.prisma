@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  tenants       TenantUser[]
+}
+
+model Tenant {
+  id        String       @id @default(cuid())
+  name      String
+  whatsappStatus String @default("unconnected") // Legacy, keeping for backwards compatibility
+  webhookUrl     String?  // URL to forward incoming messages
+  defaultDeviceId String? // The ID of the Device used for campaigns
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  users     TenantUser[]
+  devices   Device[]
+  apiKeys   ApiKey[]
+  contacts  Contact[]
+  contactGroups ContactGroup[]
+  messages  Message[]
+  campaigns Campaign[]
+  autoReplyRules AutoReplyRule[]
+}
+
+model TenantUser {
+  id        String   @id @default(cuid())
+  userId    String
+  tenantId  String
+  role      String   @default("MEMBER") // ADMIN, MEMBER
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tenantId])
+}
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  tenantId  String
+  key       String   @unique
+  createdAt DateTime @default(now())
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Device {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  phoneNumber String
+  status      String   @default("disconnect") // disconnect, connect
+  sessionId   String?  @unique // Folder name or key for Baileys auth state
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, phoneNumber])
+}
+
+model Contact {
+  id          String    @id @default(cuid())
+  tenantId    String
+  phoneNumber String
+  name        String?
+  tags        String?   // Comma separated for MVP
+  customFields String?  // JSON string for dynamic fields
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  messages    Message[]
+  campaignMessages CampaignMessage[]
+  groups      ContactGroup[]
+
+  @@unique([tenantId, phoneNumber])
+}
+
+model ContactGroup {
+  id          String    @id @default(cuid())
+  tenantId    String
+  name        String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contacts    Contact[]
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  tenantId    String
+  contactId   String
+  status      String   @default("queued") // queued, sent, delivered, read, failed
+  direction   String   @default("outbound") // outbound, inbound
+  content     String
+  mediaUrl    String?  // Fonnte: media support
+  mediaType   String?  // image, document, audio, video
+  senderName  String?  // Name of the specific participant in a group chat
+  whatsappId  String?  // ID from WhatsApp API for webhook tracking
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contact     Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  campaignMessage CampaignMessage?
+}
+
+model WebhookLog {
+  id        String   @id @default(cuid())
+  tenantId  String?
+  eventType String
+  payload   String
+  createdAt DateTime @default(now())
+}
+
+model Campaign {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  content     String
+  mediaUrl    String?
+  mediaType   String?
+  targetTags  String?  // Comma separated tags to target
+  status      String   @default("draft") // draft, running, completed
+  scheduledAt DateTime? // Fonnte: Scheduling
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  messages    CampaignMessage[]
+}
+
+model CampaignMessage {
+  id          String   @id @default(cuid())
+  campaignId  String
+  contactId   String
+  messageId   String?  @unique // Link to actual Message once sent
+  status      String   @default("pending") // pending, sent, failed
+  scheduledAt DateTime? // Time to send
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contact     Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  message     Message? @relation(fields: [messageId], references: [id], onDelete: SetNull)
+}
+
+model AutoReplyRule {
+  id        String   @id @default(cuid())
+  tenantId  String
+  keyword   String
+  replyText String
+  mediaUrl  String?
+  mediaType String?
+  matchType String   @default("exact") // exact, contains, regex, startsWith
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
