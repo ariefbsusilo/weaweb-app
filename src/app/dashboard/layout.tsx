@@ -10,7 +10,7 @@ import { LogoutButton } from "@/components/LogoutButton"
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
   
-  if (!session?.user) {
+  if (!session?.user || !(session as any).tenantId) {
     redirect("/login")
   }
 
