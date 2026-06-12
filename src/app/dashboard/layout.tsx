@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Settings, Bell, User, MessageCircle } from "lucide-react"
 import { Navigation } from "@/components/Navigation"
 import { ThemeToggle } from "@/components/ThemeToggle"
+import { LogoutButton } from "@/components/LogoutButton"
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
@@ -40,15 +41,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
             </div>
           </div>
           
-          <form action={async () => {
-            "use server"
-            await signOut({ redirectTo: "/login" })
-          }} className="mt-2 flex gap-2">
-            <Button type="submit" variant="ghost" className="flex-1 justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-[0.35rem] h-9">
-              Log out
-            </Button>
+          <div className="mt-2 flex gap-2">
+            <LogoutButton />
             <ThemeToggle />
-          </form>
+          </div>
         </div>
       </aside>
 
