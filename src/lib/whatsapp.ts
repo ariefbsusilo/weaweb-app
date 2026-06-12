@@ -115,7 +115,10 @@ export async function initWhatsApp(deviceId: string, tenantId: string) {
 
       try {
         if (msg.message.imageMessage || msg.message.documentMessage || msg.message.videoMessage || msg.message.audioMessage) {
-          const buffer = await downloadMediaMessage(msg, 'buffer', { }, { logger });
+          const buffer = await downloadMediaMessage(msg, 'buffer', { }, { 
+            logger,
+            reuploadRequest: sock.updateMediaMessage
+          });
           const uploadsDir = path.join(process.cwd(), "public", "uploads");
           if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
           
@@ -233,7 +236,7 @@ export async function initWhatsApp(deviceId: string, tenantId: string) {
       if (matchedRule) {
           // Personalisasi Nama
           let finalReply = matchedRule.replyText;
-          const senderName = msg.pushName || (contact ? contact.name : "Kak");
+          const senderName = msg.pushName || (contact && contact.name ? contact.name : "Kak") || "Kak";
           finalReply = finalReply.replace(/\{\{name\}\}/g, senderName);
 
           await sendMessageWA(tenantId, phoneNumber, finalReply, matchedRule.mediaUrl, matchedRule.mediaType);
@@ -264,7 +267,7 @@ export async function initWhatsApp(deviceId: string, tenantId: string) {
                       event: "message.received",
                       data: {
                           from: phoneNumber,
-                          name: msg.pushName || contact.name,
+                          name: msg.pushName || contact?.name || "Unknown",
                           text: incomingText,
                           mediaUrl,
                           mediaType,
