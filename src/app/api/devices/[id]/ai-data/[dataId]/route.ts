@@ -4,9 +4,10 @@ import { auth } from "@/auth"
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string, dataId: string } }
+  { params }: { params: Promise<{ id: string, dataId: string }> }
 ) {
   try {
+    const { id, dataId } = await params;
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -14,7 +15,7 @@ export async function DELETE(
 
     const device = await prisma.device.findFirst({
       where: { 
-        id: params.id,
+        id: id,
         tenant: { users: { some: { userId: session.user.id } } }
       }
     })
@@ -25,7 +26,7 @@ export async function DELETE(
 
     await prisma.aiData.delete({
       where: { 
-        id: params.dataId,
+        id: dataId,
         deviceId: device.id // ensure it belongs to this device
       }
     })

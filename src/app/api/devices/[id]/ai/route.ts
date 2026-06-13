@@ -4,9 +4,10 @@ import { auth } from "@/auth"
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -15,7 +16,7 @@ export async function GET(
     // Verify device belongs to user's tenant
     const device = await prisma.device.findFirst({
       where: { 
-        id: params.id,
+        id: id,
         tenant: { users: { some: { userId: session.user.id } } }
       }
     })
@@ -43,9 +44,10 @@ export async function GET(
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -53,7 +55,7 @@ export async function POST(
 
     const device = await prisma.device.findFirst({
       where: { 
-        id: params.id,
+        id: id,
         tenant: { users: { some: { userId: session.user.id } } }
       }
     })
