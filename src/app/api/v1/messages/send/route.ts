@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { sessions } from "@/lib/whatsapp"
 
 export async function POST(req: Request) {
   try {
@@ -54,29 +55,42 @@ export async function POST(req: Request) {
     let wamid = `mock-wa-id-${Date.now()}`;
     let status = "sent";
     
-    // Send via local worker
+    // Find connected device
+    const device = await prisma.device.findFirst({
+      where: { tenantId: apiKeyRecord.tenantId, status: "connect" }
+    });
+
+    if (!device) {
+      return NextResponse.json({ success: false, error: "No connected WhatsApp device found." }, { status: 404 });
+    }
+
+    const sock = sessions.get(device.id);
+    if (!sock) {
+      return NextResponse.json({ success: false, error: "WhatsApp session is not active." }, { status: 400 });
+    }
+
+    // Send via direct Baileys sock
     try {
-      console.log(`[API Send] Forwarding message to worker for tenant ${apiKeyRecord.tenantId} to ${phoneNumber}`);
-      const res = await fetch("http://127.0.0.1:4010/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          tenantId: apiKeyRecord.tenantId, 
-          phoneNumber, 
-          content,
-          mediaUrl,
-          mediaType,
-          location
-        })
-      });
+      console.log(`[API Send] Sending message directly for tenant ${apiKeyRecord.tenantId} to ${phoneNumber}`);
       
-      const resData = await res.json();
-      if (!res.ok || !resData.success) {
-         throw new Error(resData.error || "Worker failed to send message");
+      let msg: any = { text: content };
+
+      if (mediaUrl) {
+        if (mediaType === "image") msg = { image: { url: mediaUrl }, caption: content };
+        else if (mediaType === "video") msg = { video: { url: mediaUrl }, caption: content };
+        else if (mediaType === "audio") msg = { audio: { url: mediaUrl }, ptt: true };
+        else if (mediaType === "document") msg = { document: { url: mediaUrl }, caption: content, mimetype: "application/pdf", fileName: "Document.pdf" };
+      } else if (location) {
+        const [lat, lng] = location.split(",").map(Number);
+        if (!isNaN(lat) && !isNaN(lng)) {
+          msg = { location: { degreesLatitude: lat, degreesLongitude: lng } };
+        }
       }
+
+      await sock.sendMessage(phoneNumber, msg);
       wamid = `wa-sent-${Date.now()}`;
     } catch (e: any) {
-      console.error("[API Send] Failed to send message via worker", e);
+      console.error("[API Send] Failed to send message directly", e);
       status = "failed";
     }
 
@@ -167,29 +181,42 @@ export async function GET(req: Request) {
       }
     });
 
+    // Find connected device
+    const device = await prisma.device.findFirst({
+      where: { tenantId: apiKeyRecord.tenantId, status: "connect" }
+    });
+
+    if (!device) {
+      return NextResponse.json({ success: false, error: "No connected WhatsApp device found." }, { status: 404 });
+    }
+
+    const sock = sessions.get(device.id);
+    if (!sock) {
+      return NextResponse.json({ success: false, error: "WhatsApp session is not active." }, { status: 400 });
+    }
+
     let wamid = `mock-wa-id-${Date.now()}`;
     let status = "sent";
     
+    // Send via direct Baileys sock
     try {
-      const res = await fetch("http://127.0.0.1:4010/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          tenantId: apiKeyRecord.tenantId, 
-          phoneNumber, 
-          content,
-          mediaUrl,
-          mediaType,
-          location
-        })
-      });
+      console.log(`[API Send] Sending message directly for tenant ${apiKeyRecord.tenantId} to ${phoneNumber}`);
       
-      const resData = await res.json();
-      if (!res.ok || !resData.success) {
-         throw new Error(resData.error || "Worker failed to send message");
+      let msg: any = { text: content };
+
+      if (mediaUrl) {
+        if (mediaType === "image") msg = { image: { url: mediaUrl }, caption: content };
+        else if (mediaType === "video") msg = { video: { url: mediaUrl }, caption: content };
+        else if (mediaType === "audio") msg = { audio: { url: mediaUrl }, ptt: true };
+        else if (mediaType === "document") msg = { document: { url: mediaUrl }, caption: content, mimetype: "application/pdf", fileName: "Document.pdf" };
+      } else if (location) {
+        msg = { location: { degreesLatitude: location.latitude, degreesLongitude: location.longitude, name: location.name, address: location.address } };
       }
+
+      await sock.sendMessage(phoneNumber, msg);
       wamid = `wa-sent-${Date.now()}`;
     } catch (e: any) {
+      console.error("[API Send] Failed to send message directly", e);
       status = "failed";
     }
 
@@ -214,6 +241,7 @@ export async function GET(req: Request) {
     })
 
   } catch (error) {
+    console.error("Error sending message:", error)
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
   }
 }
