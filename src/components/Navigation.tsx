@@ -3,7 +3,7 @@
 import React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Settings } from "lucide-react"
+import { Settings, Key } from "lucide-react"
 import { motion } from "framer-motion"
 
 export function Navigation() {
@@ -33,6 +33,7 @@ export function Navigation() {
     { href: "/dashboard/chatbot", label: "Chatbot" },
     { href: "/dashboard/inbox", label: "Inbox" },
     { href: "/dashboard/analytics", label: "Analytics" },
+    { href: "/dashboard/token", label: "API Keys", icon: Key },
     { href: "/dashboard/settings", label: "Settings", icon: Settings },
   ]
 
