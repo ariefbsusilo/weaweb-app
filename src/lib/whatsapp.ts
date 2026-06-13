@@ -20,19 +20,42 @@ if (process.env.NODE_ENV !== "production") globalForWA.qrStore = qrStore;
 // Logger for baileys
 const logger = pino({ level: "silent" });
 
-export async function initWhatsApp(deviceId: string, tenantId: string) {
+export async function initWhatsApp(deviceId: string, tenantId: string, forceRecreate = false) {
   if (sessions.has(deviceId)) {
-    console.log(`Session for device ${deviceId} already exists.`);
-    return;
+    if (forceRecreate) {
+      console.log(`[WA] Force recreating session for device ${deviceId}`);
+      const oldSock = sessions.get(deviceId);
+      sessions.delete(deviceId);
+      try {
+        oldSock.ws.close();
+      } catch (e) {}
+    } else {
+      console.log(`Session for device ${deviceId} already exists.`);
+      return;
+    }
   }
 
   const sessionDir = path.join(process.cwd(), "sessions", deviceId);
+  if (forceRecreate) {
+    qrStore.delete(deviceId);
+    if (fs.existsSync(sessionDir)) {
+      console.log(`[WA] Deleting old session directory to force new QR for device ${deviceId}`);
+      fs.rmSync(sessionDir, { recursive: true, force: true });
+    }
+  }
+
   if (!fs.existsSync(sessionDir)) {
     fs.mkdirSync(sessionDir, { recursive: true });
   }
 
   const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
-  const { version, isLatest } = await fetchLatestBaileysVersion();
+  let version = [2, 3000, 1015901307] as any;
+  try {
+    const { version: fetchedVersion } = await fetchLatestBaileysVersion();
+    version = fetchedVersion;
+  } catch (err) {
+    console.error(`[WA] Failed to fetch latest Baileys version, using fallback:`, err);
+  }
 
   const sock = makeWASocket({
     version,
