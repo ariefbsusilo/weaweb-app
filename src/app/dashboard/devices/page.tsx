@@ -53,18 +53,12 @@ export default function DevicesPage() {
     setIsConnectModalOpen(true);
 
     try {
-      const res = await fetch(`/api/devices/${device.id}/connect`, {
+      await fetch(`/api/devices/${device.id}/connect`, {
         method: 'POST',
       });
-      if (!res.ok) {
-        const json = await res.json();
-        alert(json.error || "Failed to connect to worker");
-        setIsConnectModalOpen(false);
-      }
+      // We removed the alert here as requested by the user
     } catch (error) {
       console.error("Failed to start connection process", error);
-      alert("Network error while trying to connect.");
-      setIsConnectModalOpen(false);
     }
   };
 
@@ -303,7 +297,7 @@ export default function DevicesPage() {
                       {device.status === 'disconnect' ? (
                         <Button 
                           size="sm" 
-                          className="bg-[#22c55e] hover:bg-[#16a34a] text-white font-bold rounded-[0.25rem] h-8 px-3"
+                          className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-[0.25rem] h-8 px-3"
                           onClick={() => handleConnect(device)}
                         >
                           <Link2 className="w-3.5 h-3.5 mr-1.5" /> Connect

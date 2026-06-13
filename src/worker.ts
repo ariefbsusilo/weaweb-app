@@ -23,12 +23,13 @@ app.post("/action", async (req, res) => {
   try {
     if (action === "start") {
       console.log(`[WA System] Starting session for device ${deviceId}`);
-      await initWhatsApp(deviceId, tenantId);
+      initWhatsApp(deviceId, tenantId).catch(err => console.error(`[WA Start Error] ${err.message}`));
+      return res.json({ success: true });
     } else if (action === "logout") {
       console.log(`[WA System] Logging out session for device ${deviceId}`);
       await logoutWA(deviceId);
+      return res.json({ success: true });
     }
-    res.json({ success: true });
   } catch (error: any) {
     console.error(`[WA System Error] ${error.message}`);
     res.status(500).json({ error: error.message });
