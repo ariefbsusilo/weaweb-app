@@ -93,11 +93,13 @@ export default function AiDataPage() {
         </div>
 
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold">
-              <Plus className="w-4 h-4 mr-2" /> Add Knowledge
-            </Button>
-          </DialogTrigger>
+          <DialogTrigger
+            render={
+              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold">
+                <Plus className="w-4 h-4 mr-2" /> Add Knowledge
+              </Button>
+            }
+          />
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add Knowledge Data</DialogTitle>
