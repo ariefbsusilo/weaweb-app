@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { sessions } from "@/lib/whatsapp";
 
 export async function GET(req: Request) {
   try {
@@ -20,15 +21,16 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "No connected WhatsApp device found. Please connect your device first." }, { status: 404 });
     }
 
-    // Fetch groups from worker
-    const workerRes = await fetch(`http://127.0.0.1:4010/groups/${device.id}`);
-    const data = await workerRes.json();
-
-    if (!workerRes.ok) {
-      return NextResponse.json({ error: data.error || "Failed to fetch groups from worker" }, { status: workerRes.status });
+    // Fetch groups directly from Baileys socket in memory
+    const sock = sessions.get(device.id);
+    if (!sock) {
+      return NextResponse.json({ error: "WhatsApp session is not active. Please check your connection." }, { status: 400 });
     }
 
-    return NextResponse.json(data);
+    const groupData = await sock.groupFetchAllParticipating();
+    const groups = Object.values(groupData);
+
+    return NextResponse.json({ groups });
   } catch (error: any) {
     console.error("[WA Groups API Error]", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
