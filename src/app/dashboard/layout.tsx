@@ -6,6 +6,7 @@ import { Settings, Bell, User, MessageCircle } from "lucide-react"
 import { Navigation } from "@/components/Navigation"
 import { ThemeToggle } from "@/components/ThemeToggle"
 import { LogoutButton } from "@/components/LogoutButton"
+import { MobileNavigation } from "@/components/MobileNavigation"
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
@@ -53,10 +54,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {/* Mobile Top Nav */}
         <header className="md:hidden w-full bg-card border-b border-border px-4 py-3 flex items-center justify-between sticky top-0 z-40">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-[0.25rem] flex items-center justify-center">
-              <MessageCircle className="w-4 h-4 text-primary-foreground" />
+            <div className="w-8 h-8 flex items-center justify-center overflow-hidden">
+              <img src="/logo.png" alt="Weaweb Logo" className="w-full h-full object-contain scale-[1.35] drop-shadow-sm" />
             </div>
-            <span className="text-lg font-bold tracking-tight text-foreground">Weaweb</span>
+            <span className="text-lg font-bold tracking-tight text-foreground ml-1">Weaweb</span>
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
@@ -66,9 +67,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </div>
         </header>
 
-        <main className="flex-1 p-4 md:p-10 max-w-7xl mx-auto w-full">
+        <main className="flex-1 p-4 pb-24 md:pb-10 md:p-10 max-w-7xl mx-auto w-full">
           {children}
         </main>
+        <MobileNavigation />
       </div>
     </div>
   )
