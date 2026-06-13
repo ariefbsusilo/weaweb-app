@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     const { target } = body;
     if (!target) return NextResponse.json({ error: "Missing 'target'" }, { status: 400 });
 
-    const res = await fetch(`http://127.0.0.1:4000/typing`, {
+    const res = await fetch(`http://127.0.0.1:4010/typing`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tenantId: apiKey.tenantId, phoneNumber: target })

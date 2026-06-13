@@ -1,7 +1,7 @@
 import { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, downloadMediaMessage } from "@whiskeysockets/baileys";
 import { Boom } from "@hapi/boom";
 import pino from "pino";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "./prisma";
 import path from "path";
 import fs from "fs";
 

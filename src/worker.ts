@@ -209,8 +209,8 @@ async function startCampaignPoller() {
 async function startup() {
   console.log("🚀 Weaweb Worker (No-Redis) starting on port 4000...");
   
-  app.listen(4000, "0.0.0.0", () => {
-    console.log("✅ Worker HTTP API listening on http://0.0.0.0:4000");
+  app.listen(4010, "0.0.0.0", () => {
+    console.log("✅ Worker HTTP API listening on http://0.0.0.0:4010");
   });
 
   try {

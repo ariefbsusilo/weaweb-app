@@ -20,7 +20,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     // Call worker to start session
     try {
-      const res = await fetch("http://127.0.0.1:4000/action", {
+      const res = await fetch("http://127.0.0.1:4010/action", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ deviceId: device.id, tenantId, action: "start" }),

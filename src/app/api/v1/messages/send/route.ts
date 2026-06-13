@@ -57,7 +57,7 @@ export async function POST(req: Request) {
     // Send via local worker
     try {
       console.log(`[API Send] Forwarding message to worker for tenant ${apiKeyRecord.tenantId} to ${phoneNumber}`);
-      const res = await fetch("http://127.0.0.1:4000/send", {
+      const res = await fetch("http://127.0.0.1:4010/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -171,7 +171,7 @@ export async function GET(req: Request) {
     let status = "sent";
     
     try {
-      const res = await fetch("http://127.0.0.1:4000/send", {
+      const res = await fetch("http://127.0.0.1:4010/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 

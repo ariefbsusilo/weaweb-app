@@ -17,7 +17,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
     let qr = null;
     try {
-      const res = await fetch(`http://127.0.0.1:4000/qr/${deviceId}`);
+      const res = await fetch(`http://127.0.0.1:4010/qr/${deviceId}`);
       if (!res.ok) {
         throw new Error("Worker returned " + res.status);
       }

@@ -28,7 +28,7 @@ export async function POST(req: Request) {
 
     // Call internal worker HTTP API to actually send it via Baileys 
     // because Baileys runs in the worker process, not Next.js
-    const workerRes = await fetch("http://127.0.0.1:4000/send", {
+    const workerRes = await fetch("http://127.0.0.1:4010/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 

@@ -21,7 +21,7 @@ export async function GET(req: Request) {
     }
 
     // Fetch groups from worker
-    const workerRes = await fetch(`http://127.0.0.1:4000/groups/${device.id}`);
+    const workerRes = await fetch(`http://127.0.0.1:4010/groups/${device.id}`);
     const data = await workerRes.json();
 
     if (!workerRes.ok) {

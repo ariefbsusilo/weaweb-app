@@ -100,7 +100,7 @@ export async function POST(req: Request) {
                 if (isMatch) {
                     // Send Auto-Reply via local worker
                     try {
-                        await fetch("http://127.0.0.1:4000/send", {
+                        await fetch("http://127.0.0.1:4010/send", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
