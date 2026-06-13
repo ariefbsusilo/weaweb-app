@@ -52,36 +52,36 @@ export default function TokenPage() {
   return (
     <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500 max-w-4xl">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight text-zinc-900">API Tokens</h2>
-        <p className="text-zinc-500 mt-1">Manage your developer API keys and integrations.</p>
+        <h2 className="text-3xl font-bold tracking-tight text-foreground">API Tokens</h2>
+        <p className="text-muted-foreground mt-1">Manage your developer API keys and integrations.</p>
       </div>
 
 
 
-      <div className="bg-white p-6 rounded-xl border border-zinc-200 shadow-sm">
+      <div className="bg-card p-6 rounded-xl border border-border shadow-sm">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-50 rounded-lg">
-              <Key className="w-5 h-5 text-indigo-600" />
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Key className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h3 className="font-semibold text-zinc-900">Developer API Keys</h3>
-              <p className="text-sm text-zinc-500">Use these keys to authenticate via the WEAWEB REST API.</p>
+              <h3 className="font-semibold text-foreground">Developer API Keys</h3>
+              <p className="text-sm text-muted-foreground">Use these keys to authenticate via the WEAWEB REST API.</p>
             </div>
           </div>
           <Button 
             onClick={generateKey} 
             disabled={generating}
-            className="bg-indigo-600 hover:bg-indigo-700 shadow-md transition-all hover:-translate-y-0.5"
+            className="shadow-md transition-all hover:-translate-y-0.5"
           >
             {generating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
             Generate New Key
           </Button>
         </div>
 
-        <div className="border rounded-lg overflow-hidden">
+        <div className="border border-border rounded-lg overflow-hidden">
           <Table>
-            <TableHeader className="bg-zinc-50">
+            <TableHeader className="bg-secondary/30">
               <TableRow>
                 <TableHead>API Key</TableHead>
                 <TableHead>Created</TableHead>
@@ -91,23 +91,23 @@ export default function TokenPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center py-8 text-zinc-500">
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-indigo-600" />
+                  <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" />
                   </TableCell>
                 </TableRow>
               ) : keys.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center py-8 text-zinc-500">
+                  <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
                     No API keys generated yet.
                   </TableCell>
                 </TableRow>
               ) : (
                 keys.map((key) => (
                   <TableRow key={key.id}>
-                    <TableCell className="font-mono text-sm">{key.key}</TableCell>
-                    <TableCell className="text-zinc-500">{new Date(key.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell className="font-mono text-sm text-foreground">{key.key}</TableCell>
+                    <TableCell className="text-muted-foreground">{new Date(key.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => deleteKey(key.id)} className="text-red-500 hover:text-red-600 hover:bg-red-50">
+                      <Button variant="ghost" size="icon" onClick={() => deleteKey(key.id)} className="text-red-500 hover:text-red-600 hover:bg-red-500/10">
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </TableCell>

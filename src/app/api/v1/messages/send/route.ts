@@ -73,13 +73,14 @@ export async function POST(req: Request) {
     try {
       console.log(`[API Send] Sending message directly for tenant ${apiKeyRecord.tenantId} to ${phoneNumber}`);
       
-      let msg: any = { text: content };
+      const finalContent = content + "\n\n_Sent via Weaweb_";
+      let msg: any = { text: finalContent };
 
       if (mediaUrl) {
-        if (mediaType === "image") msg = { image: { url: mediaUrl }, caption: content };
-        else if (mediaType === "video") msg = { video: { url: mediaUrl }, caption: content };
+        if (mediaType === "image") msg = { image: { url: mediaUrl }, caption: finalContent };
+        else if (mediaType === "video") msg = { video: { url: mediaUrl }, caption: finalContent };
         else if (mediaType === "audio") msg = { audio: { url: mediaUrl }, ptt: true };
-        else if (mediaType === "document") msg = { document: { url: mediaUrl }, caption: content, mimetype: "application/pdf", fileName: "Document.pdf" };
+        else if (mediaType === "document") msg = { document: { url: mediaUrl }, caption: finalContent, mimetype: "application/pdf", fileName: "Document.pdf" };
       } else if (location) {
         const [lat, lng] = location.split(",").map(Number);
         if (!isNaN(lat) && !isNaN(lng)) {
@@ -202,13 +203,14 @@ export async function GET(req: Request) {
     try {
       console.log(`[API Send] Sending message directly for tenant ${apiKeyRecord.tenantId} to ${phoneNumber}`);
       
-      let msg: any = { text: content };
+      const finalContent = content + "\n\n_Sent via Weaweb_";
+      let msg: any = { text: finalContent };
 
       if (mediaUrl) {
-        if (mediaType === "image") msg = { image: { url: mediaUrl }, caption: content };
-        else if (mediaType === "video") msg = { video: { url: mediaUrl }, caption: content };
+        if (mediaType === "image") msg = { image: { url: mediaUrl }, caption: finalContent };
+        else if (mediaType === "video") msg = { video: { url: mediaUrl }, caption: finalContent };
         else if (mediaType === "audio") msg = { audio: { url: mediaUrl }, ptt: true };
-        else if (mediaType === "document") msg = { document: { url: mediaUrl }, caption: content, mimetype: "application/pdf", fileName: "Document.pdf" };
+        else if (mediaType === "document") msg = { document: { url: mediaUrl }, caption: finalContent, mimetype: "application/pdf", fileName: "Document.pdf" };
       } else if (location) {
         msg = { location: { degreesLatitude: location.latitude, degreesLongitude: location.longitude, name: location.name, address: location.address } };
       }
