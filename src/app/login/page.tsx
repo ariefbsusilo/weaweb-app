@@ -63,8 +63,8 @@ export default function LoginPage() {
             
             <div className="relative z-10">
               <div className="flex items-center gap-4 mb-12">
-                <div className="w-16 h-16 flex items-center justify-center overflow-hidden">
-                  <img src="/logo.png" alt="Weaweb Logo" className="w-full h-full object-contain scale-[1.35] drop-shadow-md" />
+                <div className="w-16 h-16 flex items-center justify-center">
+                  <img src="/logo.png" alt="Weaweb Logo" className="w-full h-full object-contain drop-shadow-md" />
                 </div>
                 <span className="text-4xl font-extrabold tracking-tight text-foreground">Weaweb</span>
               </div>
@@ -88,8 +88,8 @@ export default function LoginPage() {
           {/* Right Panel - Login Form */}
           <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-card/60 relative">
             <div className="md:hidden flex items-center justify-center gap-3 mb-8">
-              <div className="w-12 h-12 flex items-center justify-center overflow-hidden">
-                <img src="/logo.png" alt="Weaweb Logo" className="w-full h-full object-contain scale-[1.35] drop-shadow-sm" />
+              <div className="w-12 h-12 flex items-center justify-center">
+                <img src="/logo.png" alt="Weaweb Logo" className="w-full h-full object-contain drop-shadow-sm" />
               </div>
               <span className="text-3xl font-extrabold tracking-tight text-foreground">Weaweb</span>
             </div>

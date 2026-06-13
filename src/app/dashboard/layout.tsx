@@ -21,8 +21,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
       {/* Executive Vertical Sidebar */}
       <aside className="w-64 bg-card border-r border-border h-screen sticky top-0 flex flex-col z-50 shadow-sm hidden md:flex">
         <div className="px-6 py-8 flex items-center gap-3">
-          <div className="w-12 h-12 flex items-center justify-center overflow-hidden">
-            <img src="/logo.png" alt="Weaweb Logo" className="w-full h-full object-contain scale-[1.35] drop-shadow-sm" />
+          <div className="w-12 h-12 flex items-center justify-center">
+            <img src="/logo.png" alt="Weaweb Logo" className="w-full h-full object-contain drop-shadow-sm" />
           </div>
           <span className="text-2xl font-bold tracking-tight text-foreground ml-1">Weaweb</span>
         </div>
@@ -54,8 +54,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {/* Mobile Top Nav */}
         <header className="md:hidden w-full bg-card border-b border-border px-4 py-3 flex items-center justify-between sticky top-0 z-40">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 flex items-center justify-center overflow-hidden">
-              <img src="/logo.png" alt="Weaweb Logo" className="w-full h-full object-contain scale-[1.35] drop-shadow-sm" />
+            <div className="w-8 h-8 flex items-center justify-center">
+              <img src="/logo.png" alt="Weaweb Logo" className="w-full h-full object-contain drop-shadow-sm" />
             </div>
             <span className="text-lg font-bold tracking-tight text-foreground ml-1">Weaweb</span>
           </div>
