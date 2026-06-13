@@ -252,6 +252,89 @@ export async function initWhatsApp(deviceId: string, tenantId: string, forceRecr
           }
       }
 
+      if (!matchedRule && incomingText.trim() !== "") {
+        try {
+          const aiConfig = await prisma.aiConfig.findUnique({ where: { deviceId } });
+          if (aiConfig && aiConfig.isActive && aiConfig.apiKey) {
+            const aiData = await prisma.aiData.findMany({ where: { deviceId } });
+            
+            let systemPrompt = aiConfig.prompt || "You are a helpful WhatsApp assistant.";
+            if (aiData.length > 0) {
+              systemPrompt += "\n\nKnowledge Base (Use this to answer questions accurately):\n" + aiData.map(d => `${d.title}:\n${d.content}`).join("\n\n");
+            }
+            systemPrompt += "\n\nKeep your answers concise, friendly, and suitable for WhatsApp. Answer in Indonesian unless requested otherwise.";
+
+            let aiReply = "Maaf, AI sedang mengalami gangguan.";
+            let success = false;
+
+            if (aiConfig.provider === "gemini") {
+              const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${aiConfig.apiKey}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  systemInstruction: { parts: [{ text: systemPrompt }] },
+                  contents: [{ parts: [{ text: incomingText }] }]
+                })
+              });
+
+              if (res.ok) {
+                const data = await res.json();
+                if (data.candidates && data.candidates[0].content.parts[0].text) {
+                  aiReply = data.candidates[0].content.parts[0].text;
+                  success = true;
+                }
+              } else {
+                console.error("[WA] Gemini API error:", await res.text());
+              }
+            } else if (aiConfig.provider === "openai") {
+               const res = await fetch("https://api.openai.com/v1/chat/completions", {
+                 method: "POST",
+                 headers: { 
+                   "Content-Type": "application/json",
+                   "Authorization": `Bearer ${aiConfig.apiKey}`
+                 },
+                 body: JSON.stringify({
+                   model: "gpt-3.5-turbo",
+                   messages: [
+                     { role: "system", content: systemPrompt },
+                     { role: "user", content: incomingText }
+                   ]
+                 })
+               });
+               if (res.ok) {
+                 const data = await res.json();
+                 if (data.choices && data.choices[0].message.content) {
+                   aiReply = data.choices[0].message.content;
+                   success = true;
+                 }
+               } else {
+                 console.error("[WA] OpenAI API error:", await res.text());
+               }
+            }
+
+            if (success) {
+              await sendMessageWA(tenantId, phoneNumber, aiReply, null, null, null, deviceId);
+              
+              if (contact) {
+                  await prisma.message.create({
+                      data: {
+                          tenantId,
+                          contactId: contact.id,
+                          content: aiReply,
+                          status: "sent",
+                          direction: "outbound",
+                          whatsappId: `wa-ai-${Date.now()}`
+                      }
+                  });
+              }
+              matchedRule = true as any; // Skip default rule processing
+            }
+          }
+        } catch (err) {
+          console.error("[WA] AI Processing Error:", err);
+        }
+      }
+
       if (!matchedRule && defaultRule && incomingText.trim() !== "") {
           matchedRule = defaultRule;
       }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -312,29 +313,23 @@ export default function DevicesPage() {
                         <ShoppingCart className="w-3.5 h-3.5 mr-1.5" /> Order
                       </Button>
                       
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="font-bold rounded-[0.25rem] h-8 px-3"
-                        onClick={() => {
-                          navigator.clipboard.writeText(device.id);
-                          alert("Token copied: " + device.id);
-                        }}
-                      >
-                        <Key className="w-3.5 h-3.5 mr-1.5" /> Token
-                      </Button>
+
                       
                       <Button variant="outline" size="sm" className="font-bold rounded-[0.25rem] h-8 px-3">
                         <GitMerge className="w-3.5 h-3.5 mr-1.5" /> Flow
                       </Button>
                       
-                      <Button variant="outline" size="sm" className="font-bold rounded-[0.25rem] h-8 px-3">
-                        <Bot className="w-3.5 h-3.5 mr-1.5" /> AI
-                      </Button>
+                      <Link href={`/dashboard/devices/${device.id}/ai`}>
+                        <Button variant="outline" size="sm" className="font-bold rounded-[0.25rem] h-8 px-3">
+                          <Bot className="w-3.5 h-3.5 mr-1.5" /> AI
+                        </Button>
+                      </Link>
                       
-                      <Button variant="outline" size="sm" className="font-bold rounded-[0.25rem] h-8 px-3">
-                        <Database className="w-3.5 h-3.5 mr-1.5" /> AI Data
-                      </Button>
+                      <Link href={`/dashboard/devices/${device.id}/ai-data`}>
+                        <Button variant="outline" size="sm" className="font-bold rounded-[0.25rem] h-8 px-3">
+                          <Database className="w-3.5 h-3.5 mr-1.5" /> AI Data
+                        </Button>
+                      </Link>
                       
                       <Button variant="secondary" size="sm" className="font-bold rounded-[0.25rem] h-8 px-3">
                         <Edit className="w-3.5 h-3.5 mr-1.5" /> Edit

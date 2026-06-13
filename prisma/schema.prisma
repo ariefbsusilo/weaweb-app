@@ -63,6 +63,8 @@ model Device {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  aiConfig    AiConfig?
+  aiData      AiData[]
 
   @@unique([tenantId, phoneNumber])
 }
@@ -162,4 +164,26 @@ model AutoReplyRule {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model AiConfig {
+  id          String   @id @default(cuid())
+  deviceId    String   @unique
+  isActive    Boolean  @default(false)
+  provider    String   @default("gemini") // "openai" or "gemini"
+  apiKey      String?  
+  prompt      String   @default("You are a helpful WhatsApp assistant.") 
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  device      Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+}
+
+model AiData {
+  id          String   @id @default(cuid())
+  deviceId    String
+  title       String
+  content     String   
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  device      Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 }
