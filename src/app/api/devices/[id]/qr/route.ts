@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { qrStore } from "@/lib/whatsapp";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -15,18 +16,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ success: false, error: "Device not found" }, { status: 404 });
     }
 
-    let qr = null;
-    try {
-      const res = await fetch(`http://127.0.0.1:4010/qr/${deviceId}`);
-      if (!res.ok) {
-        throw new Error("Worker returned " + res.status);
-      }
-      const data = await res.json();
-      qr = data.qr;
-    } catch (e) {
-      console.error("[NextJS] Failed to fetch QR from worker", e);
-      return NextResponse.json({ success: false, error: "Failed to connect to worker to retrieve QR code." }, { status: 500 });
-    }
+    let qr = qrStore.get(deviceId) || null;
 
     return NextResponse.json({ 
       success: true, 

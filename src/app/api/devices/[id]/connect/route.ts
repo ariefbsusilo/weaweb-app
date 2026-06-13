@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { initWhatsApp } from "@/lib/whatsapp";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -18,20 +19,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       data: { status: "connecting" }
     });
 
-    // Call worker to start session
     try {
-      const res = await fetch("http://127.0.0.1:4010/action", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ deviceId: device.id, tenantId, action: "start" }),
-      });
-      if (!res.ok) {
-        console.error("[NextJS] Worker returned", res.status, await res.text());
-        throw new Error("Worker returned " + res.status);
-      }
+      console.log(`[NextJS] Starting WhatsApp session directly for device ${device.id}`);
+      initWhatsApp(device.id, tenantId, true).catch(err => console.error(`[WA Start Error] ${err.message}`));
     } catch (e) {
-      console.error("[NextJS] Failed to call worker action", e);
-      return NextResponse.json({ success: false, error: "Worker is currently starting up, please try again in a few seconds." }, { status: 500 });
+      console.error("Failed to initialize WhatsApp:", e);
+      return NextResponse.json({ success: false, error: "Failed to initialize WhatsApp." }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, message: "Connection process started" });
