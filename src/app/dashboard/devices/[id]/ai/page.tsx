@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Loader2, ArrowLeft, Bot, Save, Settings, BookOpen, Link2, Clock, ListChecks, Network, User as UserIcon, RefreshCw, Plus, BellRing, FileText, Image as ImageIcon, Globe, LayoutDashboard, ShoppingCart, DollarSign, Calendar, ShieldCheck, Table, MapPin, BadgeCheck, Zap } from "lucide-react";
+import { Loader2, ArrowLeft, Bot, Save, Settings, BookOpen, Link2, Clock, ListChecks, Network, User as UserIcon, RefreshCw, Plus, BellRing, FileText, Image as ImageIcon, Globe, LayoutDashboard, ShoppingCart, DollarSign, Calendar, ShieldCheck, Table, MapPin, BadgeCheck, Zap, Eye, Edit2, Trash2 } from "lucide-react";
 import { ReactFlow, Background, Controls, Node, Edge, addEdge, useNodesState, useEdgesState } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -575,16 +575,50 @@ export default function AiConfigPage() {
         );
 
       case "Evaluation":
+        const dummyEvals = [
+          { name: "test chat", response: "Untuk motor Nmax Turbo, kaka mau tipe yang apa? Motor Nmax Turbo ada beberapa tipe yaitu : - Nm...", date: "16/09/2025, 09.53" },
+          { name: "esra", response: "Baik kak, untuk perbandingan antara *Honda Beat* dan *Yamaha Gear 125*, berikut beberapa poinny...", date: "22/08/2025, 11.34" },
+          { name: "Rizal Yamaha SIP MGS", response: "Untuk Yamaha Jupiter Z CW FI di wilayah Plat G, berikut informasinya: 1. *Model*: Jupiter Z CW FI - *...", date: "25/07/2025, 14.03" },
+          { name: "test chat", response: "Baik kak, untuk perbandingan Fazzio dan Scoopy, berikut beberapa poinnya: **Scoopy:** - Desain yan...", date: "22/07/2025, 10.23" },
+          { name: "test chat", response: "Baik kak, untuk perbandingan Aerox dan PCX, berikut beberapa poinnya: **PCX:** - Dikenal dengan d...", date: "22/07/2025, 10.20" },
+        ];
         return (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="text-center space-y-1 mb-8">
-               <h3 className="text-2xl font-bold">AI Evaluation Logs</h3>
-               <p className="text-muted-foreground text-sm">Review AI chat scores and performance feedback.</p>
+          <div className="space-y-6 animate-in fade-in duration-300 w-full max-w-full">
+            <div className="flex justify-between items-center mb-6">
+               <h3 className="text-xl font-bold">AI Evaluation Documents</h3>
             </div>
             
-            <div className="flex flex-col items-center justify-center h-48 border border-border rounded-lg bg-secondary/10">
-              <ListChecks className="w-8 h-8 text-muted-foreground opacity-50 mb-2" />
-              <p className="text-sm text-muted-foreground">No evaluation logs available yet.</p>
+            <div className="bg-white dark:bg-card border border-border rounded-lg overflow-hidden shadow-sm overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-secondary/40 text-muted-foreground uppercase text-xs">
+                  <tr>
+                    <th className="px-6 py-4 font-semibold">Contact Name</th>
+                    <th className="px-6 py-4 font-semibold w-1/2">Ai Response</th>
+                    <th className="px-6 py-4 font-semibold whitespace-nowrap">Created At</th>
+                    <th className="px-6 py-4 font-semibold text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {dummyEvals.map((evalDoc, idx) => (
+                    <tr key={idx} className="hover:bg-secondary/20 transition-colors">
+                      <td className="px-6 py-4 font-medium">{evalDoc.name}</td>
+                      <td className="px-6 py-4 text-muted-foreground truncate max-w-[200px] md:max-w-[400px]">{evalDoc.response}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{evalDoc.date}</td>
+                      <td className="px-6 py-4 flex items-center justify-center gap-2">
+                        <button className="p-1.5 text-blue-500 border border-blue-200 bg-blue-50 hover:bg-blue-100 rounded transition-colors" title="View">
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button className="p-1.5 text-amber-500 border border-amber-200 bg-amber-50 hover:bg-amber-100 rounded transition-colors" title="Edit">
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button className="p-1.5 text-red-500 border border-red-200 bg-red-50 hover:bg-red-100 rounded transition-colors" title="Delete">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         );
@@ -672,7 +706,7 @@ export default function AiConfigPage() {
         
         {/* Left Side: Configuration */}
         <div className="h-full overflow-y-auto p-6 md:p-10 pb-32">
-          <div className={`${activeTab === "General" ? "max-w-2xl" : "max-w-4xl"} mx-auto`}>
+          <div className={`${activeTab === "General" ? "max-w-2xl" : activeTab === "Evaluation" ? "max-w-7xl" : "max-w-4xl"} mx-auto`}>
             {renderTabContent()}
           </div>
         </div>
