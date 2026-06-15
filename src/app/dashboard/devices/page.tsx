@@ -348,6 +348,19 @@ export default function DevicesPage() {
                         
                         <div className="h-5 w-px bg-border mx-1"></div>
                         
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="font-bold rounded-[0.35rem] h-9 px-3 hover:bg-primary/10 hover:text-primary transition-all"
+                          onClick={() => {
+                            setSelectedDeviceForKey(device);
+                            setGeneratedApiKey(device.apiKey || null);
+                            setIsApiKeyModalOpen(true);
+                          }}
+                        >
+                          <Key className="w-4 h-4 mr-2 text-primary" /> API Key
+                        </Button>
+                        
                         <Link href={`/dashboard/devices/${device.id}/ai`}>
                           <Button variant="ghost" size="sm" className="font-bold rounded-[0.35rem] h-9 px-3 hover:bg-primary/10 hover:text-primary transition-all">
                             <Bot className="w-4 h-4 mr-2 text-primary" /> AI Config
@@ -369,17 +382,6 @@ export default function DevicesPage() {
                         <DropdownMenuContent align="end" className="w-48 rounded-[0.5rem] border-border shadow-md">
                           <div className="px-2 py-1.5 font-bold text-xs text-muted-foreground uppercase tracking-wider">Options</div>
                           <hr className="my-1 border-border" />
-                          
-                          <DropdownMenuItem 
-                            className="font-medium cursor-pointer rounded-[0.25rem] focus:bg-secondary"
-                            onClick={() => {
-                              setSelectedDeviceForKey(device);
-                              setGeneratedApiKey(device.apiKey || null);
-                              setIsApiKeyModalOpen(true);
-                            }}
-                          >
-                            <Key className="w-4 h-4 mr-2 text-muted-foreground" /> API Key
-                          </DropdownMenuItem>
                           
                           <DropdownMenuItem className="font-medium cursor-pointer rounded-[0.25rem] focus:bg-secondary">
                             <Edit className="w-4 h-4 mr-2 text-muted-foreground" /> Edit Device
@@ -419,54 +421,77 @@ export default function DevicesPage() {
 
       {/* API Key Modal */}
       <Dialog open={isApiKeyModalOpen} onOpenChange={setIsApiKeyModalOpen}>
-        <DialogContent className="sm:max-w-md rounded-[0.75rem]">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-extrabold flex items-center">
-              <Key className="w-5 h-5 mr-2 text-primary" />
-              Device API Key
-            </DialogTitle>
-            <DialogDescription className="font-medium text-sm">
-              Use this key to send messages via the Weaweb API for <span className="font-bold text-foreground">{selectedDeviceForKey?.phoneNumber}</span>.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col space-y-4 py-4">
-            {generatedApiKey ? (
-              <div className="space-y-2">
-                <Label className="font-bold text-muted-foreground uppercase tracking-widest text-[10px]">Your Secret Key</Label>
-                <div className="flex items-center space-x-2">
-                  <Input 
-                    value={generatedApiKey} 
-                    readOnly 
-                    className="font-mono text-sm bg-secondary/50 border-border/50 rounded-[0.5rem] focus-visible:ring-0"
-                  />
-                  <Button 
-                    type="button" 
-                    size="sm" 
-                    className="px-3 rounded-[0.5rem] font-bold"
-                    onClick={() => {
-                      navigator.clipboard.writeText(generatedApiKey);
-                      alert("Copied to clipboard!");
-                    }}
-                  >
-                    Copy
-                  </Button>
+        <DialogContent className="sm:max-w-md rounded-[1rem] p-0 overflow-hidden border-border/50 shadow-2xl">
+          <div className="bg-gradient-to-br from-primary/10 via-background to-background px-6 pt-8 pb-6 border-b border-border/30 relative">
+            <div className="absolute top-0 right-0 p-32 bg-primary/5 blur-[80px] rounded-full -z-10"></div>
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-extrabold flex items-center gap-3">
+                <div className="p-2.5 bg-primary/10 text-primary rounded-[0.5rem] shadow-sm">
+                  <Key className="w-6 h-6" />
                 </div>
-                <p className="text-xs text-destructive font-medium mt-2">
-                  Warning: Generating a new key will invalidate the current one immediately!
-                </p>
+                API Credentials
+              </DialogTitle>
+              <DialogDescription className="font-medium text-[13px] text-muted-foreground mt-3 leading-relaxed">
+                Manage the secret API key for <span className="font-bold text-foreground px-2 py-0.5 bg-secondary rounded-[0.25rem]">{selectedDeviceForKey?.phoneNumber}</span>. This key grants full access to send messages via this device.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          
+          <div className="px-6 py-6 bg-background space-y-6">
+            {generatedApiKey ? (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                <div className="space-y-2">
+                  <Label className="font-extrabold text-muted-foreground uppercase tracking-widest text-[10px]">Your Secret Key</Label>
+                  <div className="flex items-center space-x-2 relative group">
+                    <Input 
+                      value={generatedApiKey} 
+                      readOnly 
+                      className="font-mono text-sm bg-secondary/50 border-border/50 rounded-[0.5rem] pr-20 h-11 focus-visible:ring-1 focus-visible:ring-primary/50 shadow-inner"
+                    />
+                    <Button 
+                      type="button" 
+                      size="sm" 
+                      className="absolute right-1 top-1 h-9 px-4 rounded-[0.35rem] font-bold shadow-sm transition-all"
+                      onClick={() => {
+                        navigator.clipboard.writeText(generatedApiKey);
+                        alert("Copied to clipboard!");
+                      }}
+                    >
+                      Copy
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-[0.5rem] flex gap-3">
+                  <div className="mt-0.5">
+                    <div className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-destructive uppercase tracking-wider mb-1">Security Warning</h4>
+                    <p className="text-[11px] text-destructive/80 font-medium leading-relaxed">
+                      Keep this key secret. If you generate a new key, any application using the old key will instantly lose access.
+                    </p>
+                  </div>
+                </div>
               </div>
             ) : (
-              <div className="text-center py-6 bg-secondary/30 rounded-[0.5rem] border border-border/50">
-                <Key className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
-                <p className="text-sm font-medium text-muted-foreground">No API key has been generated for this device yet.</p>
+              <div className="text-center py-10 bg-secondary/30 rounded-[0.75rem] border border-dashed border-border/60">
+                <div className="w-16 h-16 bg-background shadow-sm rounded-full flex items-center justify-center mx-auto mb-4 border border-border/50">
+                  <Key className="w-8 h-8 text-muted-foreground/50" />
+                </div>
+                <h3 className="text-foreground font-bold text-lg mb-1">No Active Key</h3>
+                <p className="text-sm font-medium text-muted-foreground max-w-[250px] mx-auto">Generate your first API key to start integrating this device.</p>
               </div>
             )}
+          </div>
+          
+          <div className="px-6 py-5 bg-secondary/20 border-t border-border/30">
             <Button 
               onClick={() => handleGenerateApiKey(selectedDeviceForKey?.id)}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-[0.5rem] font-bold h-10 shadow-sm"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-[0.5rem] font-bold h-12 shadow-md transition-all hover:shadow-lg active:scale-[0.98]"
             >
               <RefreshCcw className="w-4 h-4 mr-2" />
-              {generatedApiKey ? "Generate New Key" : "Generate API Key"}
+              {generatedApiKey ? "Regenerate API Key" : "Generate API Key Now"}
             </Button>
           </div>
         </DialogContent>
