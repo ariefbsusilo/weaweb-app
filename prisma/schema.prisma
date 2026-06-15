@@ -60,6 +60,7 @@ model Device {
   phoneNumber String
   status      String   @default("disconnect") // disconnect, connect
   sessionId   String?  @unique // Folder name or key for Baileys auth state
+  apiKey      String?  @unique // Weaweb API Key for this specific device
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)

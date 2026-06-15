@@ -68,7 +68,7 @@ export default function AiConfigPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl animate-in fade-in zoom-in-95 duration-500">
+    <div className="space-y-6 max-w-3xl mx-auto animate-in fade-in zoom-in-95 duration-500">
       <div className="flex items-center gap-4">
         <Button variant="outline" size="icon" onClick={() => router.push("/dashboard/devices")}>
           <ArrowLeft className="w-4 h-4" />

@@ -11,14 +11,18 @@ export async function POST(req: Request) {
 
     const apiKeyStr = authHeader.split(" ")[1]
     
-    // Find Tenant by API Key
-    const apiKeyRecord = await prisma.apiKey.findUnique({
-      where: { key: apiKeyStr },
+    // Find Device by API Key
+    const device = await prisma.device.findUnique({
+      where: { apiKey: apiKeyStr },
       include: { tenant: true }
     })
 
-    if (!apiKeyRecord) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!device) {
+      return NextResponse.json({ error: "Unauthorized: Invalid Device API Key" }, { status: 401 })
+    }
+
+    if (device.status !== "connect") {
+      return NextResponse.json({ error: "Device is disconnected. Please scan QR first." }, { status: 400 })
     }
 
     const body = await req.json()
@@ -28,25 +32,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing 'target' or 'content'" }, { status: 400 })
     }
 
-    // Format target correctly
-    // If it's a group, it already contains @g.us
-    // If it's a standard number, the worker will append @s.whatsapp.net automatically
     let phoneNumber = target;
     if (target.includes('@g.us')) {
       phoneNumber = target;
     } else if (target.includes('@s.whatsapp.net')) {
       phoneNumber = target;
     } else {
-      // Clean standard numbers
       phoneNumber = target.replace(/[^0-9]/g, '');
     }
 
-    // Upsert contact so we have a record
     const contact = await prisma.contact.upsert({
-      where: { tenantId_phoneNumber: { tenantId: apiKeyRecord.tenantId, phoneNumber } },
+      where: { tenantId_phoneNumber: { tenantId: device.tenantId, phoneNumber } },
       update: {},
       create: {
-        tenantId: apiKeyRecord.tenantId,
+        tenantId: device.tenantId,
         phoneNumber,
         name: phoneNumber.includes('@g.us') ? "API Group" : "API Contact"
       }
@@ -54,15 +53,6 @@ export async function POST(req: Request) {
 
     let wamid = `mock-wa-id-${Date.now()}`;
     let status = "sent";
-    
-    // Find connected device
-    const device = await prisma.device.findFirst({
-      where: { tenantId: apiKeyRecord.tenantId, status: "connect" }
-    });
-
-    if (!device) {
-      return NextResponse.json({ success: false, error: "No connected WhatsApp device found." }, { status: 404 });
-    }
 
     const sock = sessions.get(device.id);
     if (!sock) {
@@ -71,9 +61,9 @@ export async function POST(req: Request) {
 
     // Send via direct Baileys sock
     try {
-      console.log(`[API Send] Sending message directly for tenant ${apiKeyRecord.tenantId} to ${phoneNumber}`);
+      console.log(`[API Send] Sending message directly for tenant ${device.tenantId} to ${phoneNumber}`);
       
-      const finalContent = content + "\n\n_Sent via Weaweb_";
+      const finalContent = content + "\n\n> _Sent via Weaweb _";
       let msg: any = { text: finalContent };
 
       if (mediaUrl) {
@@ -98,7 +88,7 @@ export async function POST(req: Request) {
     // Create Message Record
     const message = await prisma.message.create({
       data: {
-        tenantId: apiKeyRecord.tenantId,
+        tenantId: device.tenantId,
         contactId: contact.id,
         content,
         mediaUrl,
@@ -131,13 +121,17 @@ export async function GET(req: Request) {
 
     const apiKeyStr = authHeader.split(" ")[1]
     
-    const apiKeyRecord = await prisma.apiKey.findUnique({
-      where: { key: apiKeyStr },
+    const device = await prisma.device.findUnique({
+      where: { apiKey: apiKeyStr },
       include: { tenant: true }
     })
 
-    if (!apiKeyRecord) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!device) {
+      return NextResponse.json({ error: "Unauthorized: Invalid Device API Key" }, { status: 401 })
+    }
+
+    if (device.status !== "connect") {
+      return NextResponse.json({ error: "Device is disconnected. Please scan QR first." }, { status: 400 })
     }
 
     const { searchParams } = new URL(req.url)
@@ -173,23 +167,14 @@ export async function GET(req: Request) {
     }
 
     const contact = await prisma.contact.upsert({
-      where: { tenantId_phoneNumber: { tenantId: apiKeyRecord.tenantId, phoneNumber } },
+      where: { tenantId_phoneNumber: { tenantId: device.tenantId, phoneNumber } },
       update: {},
       create: {
-        tenantId: apiKeyRecord.tenantId,
+        tenantId: device.tenantId,
         phoneNumber,
         name: phoneNumber.includes('@g.us') ? "API Group" : "API Contact"
       }
     });
-
-    // Find connected device
-    const device = await prisma.device.findFirst({
-      where: { tenantId: apiKeyRecord.tenantId, status: "connect" }
-    });
-
-    if (!device) {
-      return NextResponse.json({ success: false, error: "No connected WhatsApp device found." }, { status: 404 });
-    }
 
     const sock = sessions.get(device.id);
     if (!sock) {
@@ -201,9 +186,9 @@ export async function GET(req: Request) {
     
     // Send via direct Baileys sock
     try {
-      console.log(`[API Send] Sending message directly for tenant ${apiKeyRecord.tenantId} to ${phoneNumber}`);
+      console.log(`[API Send] Sending message directly for tenant ${device.tenantId} to ${phoneNumber}`);
       
-      const finalContent = content + "\n\n_Sent via Weaweb_";
+      const finalContent = content + "\n\n> _Sent via Weaweb _";
       let msg: any = { text: finalContent };
 
       if (mediaUrl) {
@@ -224,7 +209,7 @@ export async function GET(req: Request) {
 
     const message = await prisma.message.create({
       data: {
-        tenantId: apiKeyRecord.tenantId,
+        tenantId: device.tenantId,
         contactId: contact.id,
         content,
         mediaUrl,

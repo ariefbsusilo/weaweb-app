@@ -48,6 +48,24 @@ export default function DevicesPage() {
   const [selectedDevice, setSelectedDevice] = useState<any>(null);
   const [liveQr, setLiveQr] = useState<string | null>(null);
 
+  // API Key Modal state
+  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  const [selectedDeviceForKey, setSelectedDeviceForKey] = useState<any>(null);
+  const [generatedApiKey, setGeneratedApiKey] = useState<string | null>(null);
+
+  const handleGenerateApiKey = async (deviceId: string) => {
+    try {
+      const res = await fetch(`/api/devices/${deviceId}/key`, { method: 'POST' });
+      const json = await res.json();
+      if (json.success) {
+        setGeneratedApiKey(json.apiKey);
+        fetchDevices();
+      }
+    } catch (error) {
+      console.error("Failed to generate API Key", error);
+    }
+  };
+
   const handleConnect = async (device: any) => {
     setSelectedDevice(device);
     setLiveQr(null);
@@ -352,6 +370,17 @@ export default function DevicesPage() {
                           <DropdownMenuLabel className="font-bold text-xs text-muted-foreground uppercase tracking-wider">Options</DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           
+                          <DropdownMenuItem 
+                            className="font-medium cursor-pointer rounded-[0.25rem] focus:bg-secondary"
+                            onClick={() => {
+                              setSelectedDeviceForKey(device);
+                              setGeneratedApiKey(device.apiKey || null);
+                              setIsApiKeyModalOpen(true);
+                            }}
+                          >
+                            <Key className="w-4 h-4 mr-2 text-muted-foreground" /> API Key
+                          </DropdownMenuItem>
+                          
                           <DropdownMenuItem className="font-medium cursor-pointer rounded-[0.25rem] focus:bg-secondary">
                             <Edit className="w-4 h-4 mr-2 text-muted-foreground" /> Edit Device
                           </DropdownMenuItem>
@@ -389,6 +418,60 @@ export default function DevicesPage() {
         </div>
       </div>
 
+      {/* API Key Modal */}
+      <Dialog open={isApiKeyModalOpen} onOpenChange={setIsApiKeyModalOpen}>
+        <DialogContent className="sm:max-w-md rounded-[0.75rem]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-extrabold flex items-center">
+              <Key className="w-5 h-5 mr-2 text-primary" />
+              Device API Key
+            </DialogTitle>
+            <DialogDescription className="font-medium text-sm">
+              Use this key to send messages via the Weaweb API for <span className="font-bold text-foreground">{selectedDeviceForKey?.phoneNumber}</span>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col space-y-4 py-4">
+            {generatedApiKey ? (
+              <div className="space-y-2">
+                <Label className="font-bold text-muted-foreground uppercase tracking-widest text-[10px]">Your Secret Key</Label>
+                <div className="flex items-center space-x-2">
+                  <Input 
+                    value={generatedApiKey} 
+                    readOnly 
+                    className="font-mono text-sm bg-secondary/50 border-border/50 rounded-[0.5rem] focus-visible:ring-0"
+                  />
+                  <Button 
+                    type="button" 
+                    size="sm" 
+                    className="px-3 rounded-[0.5rem] font-bold"
+                    onClick={() => {
+                      navigator.clipboard.writeText(generatedApiKey);
+                      alert("Copied to clipboard!");
+                    }}
+                  >
+                    Copy
+                  </Button>
+                </div>
+                <p className="text-xs text-destructive font-medium mt-2">
+                  Warning: Generating a new key will invalidate the current one immediately!
+                </p>
+              </div>
+            ) : (
+              <div className="text-center py-6 bg-secondary/30 rounded-[0.5rem] border border-border/50">
+                <Key className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+                <p className="text-sm font-medium text-muted-foreground">No API key has been generated for this device yet.</p>
+              </div>
+            )}
+            <Button 
+              onClick={() => handleGenerateApiKey(selectedDeviceForKey?.id)}
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-[0.5rem] font-bold h-10 shadow-sm"
+            >
+              <RefreshCcw className="w-4 h-4 mr-2" />
+              {generatedApiKey ? "Generate New Key" : "Generate API Key"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
