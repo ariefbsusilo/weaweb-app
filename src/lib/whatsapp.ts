@@ -315,6 +315,11 @@ export async function initWhatsApp(deviceId: string, tenantId: string, forceRecr
             if (success) {
               await sendMessageWA(tenantId, phoneNumber, aiReply, null, null, null, deviceId);
               
+              await prisma.aiConfig.update({
+                  where: { deviceId },
+                  data: { totalResponses: { increment: 1 } }
+              });
+
               if (contact) {
                   await prisma.message.create({
                       data: {

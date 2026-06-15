@@ -179,6 +179,7 @@ model AiConfig {
   provider    String   @default("gemini") // "openai" or "gemini"
   apiKey      String?  
   prompt      String   @default("You are a helpful WhatsApp assistant.") 
+  totalResponses Int   @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   device      Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
@@ -201,7 +202,8 @@ model AiIntegration {
   id          String   @id @default(cuid())
   deviceId    String
   name        String
-  provider    String   // make, zapier, custom_crm
+  description String?
+  provider    String   @default("custom") // make, zapier, custom_crm, custom
   apiKey      String?
   webhookUrl  String?
   isActive    Boolean  @default(true)

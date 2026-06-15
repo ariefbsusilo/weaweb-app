@@ -314,6 +314,13 @@ export default function DevicesPage() {
                   </div>
                 </div>
 
+                <div className="flex items-center gap-2 mb-4 px-1">
+                  <Badge variant="secondary" className="text-xs font-medium px-2.5 py-1 bg-blue-50/50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border-blue-200/50">
+                    <Bot className="w-3.5 h-3.5 mr-1.5" />
+                    {device.aiConfig?.totalResponses || 0} AI Responses
+                  </Badge>
+                </div>
+
                 <div className="pt-4 border-t border-border/40 mt-auto flex items-center justify-between gap-2">
                   <div className="flex gap-2">
                     {device.status === 'disconnect' ? (

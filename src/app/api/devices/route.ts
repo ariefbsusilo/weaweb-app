@@ -10,6 +10,7 @@ export async function GET() {
 
     const devices = await prisma.device.findMany({
       where: { tenantId },
+      include: { aiConfig: true },
       orderBy: { createdAt: "desc" }
     });
     return NextResponse.json({ success: true, data: devices });

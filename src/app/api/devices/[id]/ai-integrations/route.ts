@@ -25,7 +25,8 @@ export async function GET(
     }
 
     const integrations = await prisma.aiIntegration.findMany({
-      where: { deviceId: device.id }
+      where: { deviceId: device.id, provider: "custom" },
+      orderBy: { createdAt: "desc" }
     })
 
     return NextResponse.json(integrations)
@@ -58,37 +59,66 @@ export async function POST(
     }
 
     const body = await req.json()
-    const { name, isActive, provider } = body
+    const { name, description, webhookUrl } = body
 
-    if (!name) {
-      return NextResponse.json({ error: "Name is required" }, { status: 400 })
+    if (!name || !webhookUrl) {
+      return NextResponse.json({ error: "Name and Webhook URL are required" }, { status: 400 })
     }
 
-    // Check if integration exists for this device
-    const existing = await prisma.aiIntegration.findFirst({
-      where: { deviceId: device.id, name }
+    const integration = await prisma.aiIntegration.create({
+      data: {
+        deviceId: device.id,
+        name,
+        description,
+        webhookUrl,
+        provider: "custom",
+        isActive: true
+      }
     })
-
-    let integration;
-    if (existing) {
-      integration = await prisma.aiIntegration.update({
-        where: { id: existing.id },
-        data: { isActive }
-      })
-    } else {
-      integration = await prisma.aiIntegration.create({
-        data: {
-          deviceId: device.id,
-          name,
-          provider: provider || "custom",
-          isActive
-        }
-      })
-    }
 
     return NextResponse.json(integration)
   } catch (error) {
-    console.error("Failed to toggle AI Integration:", error)
+    console.error("Failed to create Custom AI Tool:", error)
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+  }
+}
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const url = new URL(req.url);
+    const toolId = url.searchParams.get("toolId");
+
+    if (!toolId) {
+       return NextResponse.json({ error: "Tool ID is required" }, { status: 400 });
+    }
+
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const device = await prisma.device.findFirst({
+      where: { 
+        id: id,
+        tenant: { users: { some: { userId: session.user.id } } }
+      }
+    })
+
+    if (!device) {
+      return NextResponse.json({ error: "Device not found" }, { status: 404 })
+    }
+
+    await prisma.aiIntegration.delete({
+      where: { id: toolId, deviceId: device.id }
+    })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error("Failed to delete AI Tool:", error)
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
   }
 }

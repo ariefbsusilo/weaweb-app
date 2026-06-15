@@ -49,6 +49,14 @@ export default function AiConfigPage() {
   const [togglingIntegration, setTogglingIntegration] = useState<string | null>(null);
   const [activeSettingsApp, setActiveSettingsApp] = useState<{name: string, desc: string} | null>(null);
 
+  // Custom AI Tool State
+  const [isCustomToolModalOpen, setIsCustomToolModalOpen] = useState(false);
+  const [newToolName, setNewToolName] = useState("");
+  const [newToolDesc, setNewToolDesc] = useState("");
+  const [newToolUrl, setNewToolUrl] = useState("");
+  const [isAddingTool, setIsAddingTool] = useState(false);
+  const [isDeletingTool, setIsDeletingTool] = useState<string | null>(null);
+
   // Sandbox Chat State
   const [chatMessages, setChatMessages] = useState<{role: 'user' | 'model', text: string}[]>([]);
   const [chatInput, setChatInput] = useState("");
@@ -124,8 +132,7 @@ export default function AiConfigPage() {
         if (ksRes.ok) setKnowledgeSources(await ksRes.json());
 
         // Fetch Integrations
-        const intRes = await fetch(`/api/devices/${deviceId}/ai-integrations`);
-        if (intRes.ok) setIntegrations(await intRes.json());
+        await fetchIntegrations();
 
         // Fetch Orchestration
         const orchRes = await fetch(`/api/devices/${deviceId}/ai-orchestration`);
@@ -194,16 +201,72 @@ export default function AiConfigPage() {
       }
     } catch (err) {
       console.error("Failed to delete", err);
+     } finally {
+      // setIsToggling(false);
     }
   };
 
-  const handleToggleIntegration = async (name: string, currentState: boolean) => {
+  const fetchIntegrations = async () => {
+    const intRes = await fetch(`/api/devices/${deviceId}/ai-integrations`);
+    if (intRes.ok) setIntegrations(await intRes.json());
+  };
+
+  const handleAddCustomTool = async () => {
+    if (!newToolName || !newToolUrl) return;
+    setIsAddingTool(true);
+    try {
+      const res = await fetch(`/api/devices/${deviceId}/ai-integrations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          name: newToolName.replace(/\s+/g, "_"), // Enforce no spaces for tool names
+          description: newToolDesc,
+          webhookUrl: newToolUrl
+        })
+      });
+      if (res.ok) {
+        await fetchIntegrations();
+        setIsCustomToolModalOpen(false);
+        setNewToolName("");
+        setNewToolDesc("");
+        setNewToolUrl("");
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to add tool");
+      }
+    } catch (e) {
+      alert("Something went wrong");
+    } finally {
+      setIsAddingTool(false);
+    }
+  };
+
+  const handleDeleteCustomTool = async (toolId: string) => {
+    if (!confirm("Are you sure you want to delete this tool?")) return;
+    setIsDeletingTool(toolId);
+    try {
+      const res = await fetch(`/api/devices/${deviceId}/ai-integrations?toolId=${toolId}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
+        await fetchIntegrations();
+      } else {
+        alert("Failed to delete tool");
+      }
+    } catch (e) {
+      alert("Something went wrong");
+    } finally {
+      setIsDeletingTool(null);
+    }
+  };
+
+  const handleToggleIntegration = async (name: string, currentStatus: boolean) => {
     setTogglingIntegration(name);
     try {
       const res = await fetch(`/api/devices/${deviceId}/ai-integrations`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, isActive: !currentState }),
+        body: JSON.stringify({ name, isActive: !currentStatus }),
       });
       if (res.ok) {
         const updated = await res.json();
@@ -476,26 +539,30 @@ export default function AiConfigPage() {
               <p className="text-muted-foreground text-sm mb-6">Enable AI tools to enhance your chatbot's capabilities with additional functionalities.</p>
               
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {[
-                  { name: "nearest_store_locator", desc: "Use this if user is asking about nearest store. This tool uses customer's address to find the nearest outlet." },
-                  { name: "Product_Catalog", desc: "Find the available products based on product search query given by the customer." },
-                  { name: "Leads Customer", desc: "WAJIB Gunakan untuk mendata customer, panggil tools ketika : 1. Leads / chat pertama dari customer muncul, get data seperti Nama / Display name dan Nomer Telepon" },
-                  { name: "Store_Database", desc: "Find the store based on store name search query given by the customer." }
-                ].map((tool, idx) => {
-                  const isActive = integrations.find(i => i.name === tool.name)?.isActive || false;
+                {integrations.filter(i => i.provider === 'custom').map((tool, idx) => {
+                  const isActive = tool.isActive;
                   const isToggling = togglingIntegration === tool.name;
 
                   return (
-                    <div key={idx} className={`border rounded-xl p-5 flex flex-col relative overflow-hidden ${isActive ? 'border-green-400 bg-green-50/30 dark:bg-green-950/10' : 'border-border bg-card'}`}>
+                    <div key={tool.id} className={`border rounded-xl p-5 flex flex-col relative overflow-hidden ${isActive ? 'border-green-400 bg-green-50/30 dark:bg-green-950/10' : 'border-border bg-card'}`}>
                       <div className="flex justify-between items-start mb-2">
                         <div className={`flex items-center gap-1.5 text-xs ${isActive ? 'font-semibold text-green-600' : 'text-muted-foreground'}`}>
                           {isActive ? 'Active' : 'Inactive'} <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-green-500' : 'bg-gray-300'}`}></span>
                         </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6 text-muted-foreground hover:text-destructive -mr-2 -mt-2"
+                          onClick={() => handleDeleteCustomTool(tool.id)}
+                          disabled={isDeletingTool === tool.id}
+                        >
+                          {isDeletingTool === tool.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                        </Button>
                       </div>
                       <h4 className="font-bold text-base mb-2">{tool.name}</h4>
-                      <p className="text-xs text-muted-foreground mb-6 flex-1">{tool.desc}</p>
+                      <p className="text-xs text-muted-foreground mb-6 flex-1 line-clamp-3" title={tool.description}>{tool.description}</p>
                       <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" className={`flex-1 h-8 text-xs ${isActive ? 'bg-white hover:bg-gray-50' : ''}`} onClick={() => setActiveSettingsApp({name: tool.name, desc: tool.desc})}>Settings</Button>
+                        <Button variant="outline" size="sm" className={`flex-1 h-8 text-xs ${isActive ? 'bg-white hover:bg-gray-50' : ''}`} onClick={() => setActiveSettingsApp({name: tool.name, desc: "Webhook: " + tool.webhookUrl})}>Details</Button>
                         <Button 
                           variant={isActive ? "default" : "outline"} 
                           size="sm" 
@@ -510,9 +577,12 @@ export default function AiConfigPage() {
                   );
                 })}
 
-                <div className="border-2 border-dashed border-border bg-secondary/20 hover:bg-secondary/40 transition-colors rounded-xl p-5 flex flex-col items-center justify-center min-h-[160px] cursor-pointer text-muted-foreground hover:text-foreground">
+                <div 
+                  onClick={() => setIsCustomToolModalOpen(true)}
+                  className="border-2 border-dashed border-border bg-secondary/20 hover:bg-secondary/40 transition-colors rounded-xl p-5 flex flex-col items-center justify-center min-h-[160px] cursor-pointer text-muted-foreground hover:text-foreground"
+                >
                   <Plus className="w-8 h-8 mb-2" />
-                  <span className="font-bold">Create AI Tool</span>
+                  <span className="font-bold">Create Custom Tool</span>
                 </div>
               </div>
             </section>
@@ -827,6 +897,54 @@ export default function AiConfigPage() {
           </div>
           <DialogFooter>
             <Button onClick={() => setActiveSettingsApp(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Custom Tool Dialog */}
+      <Dialog open={isCustomToolModalOpen} onOpenChange={setIsCustomToolModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add Custom AI Tool</DialogTitle>
+            <DialogDescription>
+              Create a custom webhook tool that the AI can trigger. Tool names should not contain spaces.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="tool-name">Tool Name (e.g., check_shipping_cost)</Label>
+              <Input
+                id="tool-name"
+                placeholder="No spaces allowed"
+                value={newToolName}
+                onChange={(e) => setNewToolName(e.target.value.replace(/\s+/g, "_"))}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="tool-desc">Description (Instructions for AI)</Label>
+              <Textarea
+                id="tool-desc"
+                placeholder="Explain to the AI when and how to use this tool."
+                value={newToolDesc}
+                onChange={(e) => setNewToolDesc(e.target.value)}
+                className="h-20"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="tool-url">Webhook URL</Label>
+              <Input
+                id="tool-url"
+                placeholder="https://api.yourdomain.com/endpoint"
+                value={newToolUrl}
+                onChange={(e) => setNewToolUrl(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCustomToolModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddCustomTool} disabled={isAddingTool || !newToolName || !newToolUrl}>
+              {isAddingTool ? "Saving..." : "Add Tool"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
