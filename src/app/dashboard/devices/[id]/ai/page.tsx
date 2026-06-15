@@ -48,6 +48,14 @@ export default function AiConfigPage() {
   const [uploading, setUploading] = useState(false);
   const [togglingIntegration, setTogglingIntegration] = useState<string | null>(null);
   const [activeSettingsApp, setActiveSettingsApp] = useState<{name: string, desc: string} | null>(null);
+  
+  // Notification Config State
+  const [notifPrompt, setNotifPrompt] = useState("");
+  const [notifPhones, setNotifPhones] = useState<string[]>([]);
+  const [notifInputs, setNotifInputs] = useState<string[]>([]);
+  const [notifInboxId, setNotifInboxId] = useState("");
+  const [allDevices, setAllDevices] = useState<any[]>([]);
+  const [savingNotif, setSavingNotif] = useState(false);
 
   // Custom AI Tool State
   const [isCustomToolModalOpen, setIsCustomToolModalOpen] = useState(false);
@@ -56,6 +64,9 @@ export default function AiConfigPage() {
   const [newToolUrl, setNewToolUrl] = useState("");
   const [isAddingTool, setIsAddingTool] = useState(false);
   const [isDeletingTool, setIsDeletingTool] = useState<string | null>(null);
+
+  // Evaluations State
+  const [evaluations, setEvaluations] = useState<any[]>([]);
 
   // Sandbox Chat State
   const [chatMessages, setChatMessages] = useState<{role: 'user' | 'model', text: string}[]>([]);
@@ -133,6 +144,32 @@ export default function AiConfigPage() {
 
         // Fetch Integrations
         await fetchIntegrations();
+
+        // Fetch All Devices for Notification Inbox selection
+        const allDevRes = await fetch('/api/devices');
+        if (allDevRes.ok) {
+          const devData = await allDevRes.json();
+          if (devData.success) setAllDevices(devData.data);
+        }
+
+        // Fetch Notification Config
+        const notifRes = await fetch(`/api/devices/${deviceId}/ai-integrations/notification`);
+        if (notifRes.ok) {
+          const nData = await notifRes.json();
+          if (nData.configJson) {
+            try {
+              const parsed = JSON.parse(nData.configJson);
+              setNotifPrompt(parsed.prompt || "");
+              setNotifPhones(parsed.phones || []);
+              setNotifInputs(parsed.inputs || []);
+              setNotifInboxId(parsed.inboxId || "");
+            } catch(e) {}
+          }
+        }
+
+        // Fetch Evaluations
+        const evalRes = await fetch(`/api/devices/${deviceId}/ai-evaluations`);
+        if (evalRes.ok) setEvaluations(await evalRes.json());
 
         // Fetch Orchestration
         const orchRes = await fetch(`/api/devices/${deviceId}/ai-orchestration`);
@@ -257,6 +294,34 @@ export default function AiConfigPage() {
       alert("Something went wrong");
     } finally {
       setIsDeletingTool(null);
+    }
+  };
+
+  const handleSaveNotification = async () => {
+    setSavingNotif(true);
+    try {
+      const configJson = JSON.stringify({
+        prompt: notifPrompt,
+        phones: notifPhones,
+        inputs: notifInputs,
+        inboxId: notifInboxId
+      });
+      const res = await fetch(`/api/devices/${deviceId}/ai-integrations/notification`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ configJson, isActive: true })
+      });
+      if (res.ok) {
+        alert("Personal Notification Configuration saved successfully!");
+        setActiveSettingsApp(null);
+        await fetchIntegrations();
+      } else {
+        alert("Failed to save notification config");
+      }
+    } catch (e) {
+      alert("Something went wrong");
+    } finally {
+      setSavingNotif(false);
     }
   };
 
@@ -647,13 +712,6 @@ export default function AiConfigPage() {
         );
 
       case "Evaluation":
-        const dummyEvals = [
-          { name: "test chat", response: "Untuk motor Nmax Turbo, kaka mau tipe yang apa? Motor Nmax Turbo ada beberapa tipe yaitu : - Nm...", date: "16/09/2025, 09.53" },
-          { name: "esra", response: "Baik kak, untuk perbandingan antara *Honda Beat* dan *Yamaha Gear 125*, berikut beberapa poinny...", date: "22/08/2025, 11.34" },
-          { name: "Rizal Yamaha SIP MGS", response: "Untuk Yamaha Jupiter Z CW FI di wilayah Plat G, berikut informasinya: 1. *Model*: Jupiter Z CW FI - *...", date: "25/07/2025, 14.03" },
-          { name: "test chat", response: "Baik kak, untuk perbandingan Fazzio dan Scoopy, berikut beberapa poinnya: **Scoopy:** - Desain yan...", date: "22/07/2025, 10.23" },
-          { name: "test chat", response: "Baik kak, untuk perbandingan Aerox dan PCX, berikut beberapa poinnya: **PCX:** - Dikenal dengan d...", date: "22/07/2025, 10.20" },
-        ];
         return (
           <div className="space-y-6 animate-in fade-in duration-300 w-full max-w-full">
             <div className="flex justify-between items-center mb-6">
@@ -661,36 +719,50 @@ export default function AiConfigPage() {
             </div>
             
             <div className="bg-white dark:bg-card border border-border rounded-lg overflow-hidden shadow-sm overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-secondary/40 text-muted-foreground uppercase text-xs">
-                  <tr>
-                    <th className="px-6 py-4 font-semibold">Contact Name</th>
-                    <th className="px-6 py-4 font-semibold w-1/2">Ai Response</th>
-                    <th className="px-6 py-4 font-semibold whitespace-nowrap">Created At</th>
-                    <th className="px-6 py-4 font-semibold text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {dummyEvals.map((evalDoc, idx) => (
-                    <tr key={idx} className="hover:bg-secondary/20 transition-colors">
-                      <td className="px-6 py-4 font-medium">{evalDoc.name}</td>
-                      <td className="px-6 py-4 text-muted-foreground truncate max-w-[200px] md:max-w-[400px]">{evalDoc.response}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{evalDoc.date}</td>
-                      <td className="px-6 py-4 flex items-center justify-center gap-2">
-                        <button className="p-1.5 text-blue-500 border border-blue-200 bg-blue-50 hover:bg-blue-100 rounded transition-colors" title="View">
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button className="p-1.5 text-amber-500 border border-amber-200 bg-amber-50 hover:bg-amber-100 rounded transition-colors" title="Edit">
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button className="p-1.5 text-red-500 border border-red-200 bg-red-50 hover:bg-red-100 rounded transition-colors" title="Delete">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
+              {evaluations.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground font-medium">
+                  No evaluations found. Evaluate chats from the Inbox first.
+                </div>
+              ) : (
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-secondary/40 text-muted-foreground uppercase text-xs">
+                    <tr>
+                      <th className="px-6 py-4 font-semibold">Contact Name</th>
+                      <th className="px-6 py-4 font-semibold w-1/2">Ai Response (Feedback)</th>
+                      <th className="px-6 py-4 font-semibold whitespace-nowrap">Score</th>
+                      <th className="px-6 py-4 font-semibold whitespace-nowrap">Created At</th>
+                      <th className="px-6 py-4 font-semibold text-center">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {evaluations.map((evalDoc) => (
+                      <tr key={evalDoc.id} className="hover:bg-secondary/20 transition-colors">
+                        <td className="px-6 py-4 font-medium">{evalDoc.contactName}</td>
+                        <td className="px-6 py-4 text-muted-foreground truncate max-w-[200px] md:max-w-[400px]">{evalDoc.feedback}</td>
+                        <td className="px-6 py-4 font-bold text-primary">{evalDoc.score}/10</td>
+                        <td className="px-6 py-4 whitespace-nowrap">{new Date(evalDoc.createdAt).toLocaleString()}</td>
+                        <td className="px-6 py-4 flex items-center justify-center gap-2">
+                          <button onClick={() => alert(evalDoc.feedback)} className="p-1.5 text-blue-500 border border-blue-200 bg-blue-50 hover:bg-blue-100 rounded transition-colors" title="View">
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={async () => {
+                              if (!confirm("Delete this evaluation?")) return;
+                              const res = await fetch(`/api/devices/${deviceId}/ai-evaluations?evalId=${evalDoc.id}`, { method: "DELETE" });
+                              if (res.ok) {
+                                setEvaluations(prev => prev.filter(e => e.id !== evalDoc.id));
+                              }
+                            }}
+                            className="p-1.5 text-red-500 border border-red-200 bg-red-50 hover:bg-red-100 rounded transition-colors" title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         );
@@ -880,23 +952,122 @@ export default function AiConfigPage() {
 
       {/* Settings Dialog */}
       <Dialog open={!!activeSettingsApp} onOpenChange={(open) => !open && setActiveSettingsApp(null)}>
-        <DialogContent>
+        <DialogContent className={activeSettingsApp?.name === "Send Personal Notification" ? "sm:max-w-2xl max-h-[90vh] overflow-y-auto" : ""}>
           <DialogHeader>
-            <DialogTitle>Settings: {activeSettingsApp?.name}</DialogTitle>
+            <DialogTitle>{activeSettingsApp?.name === "Send Personal Notification" ? "Personal Notification Configuration" : `Settings: ${activeSettingsApp?.name}`}</DialogTitle>
             <DialogDescription>
               {activeSettingsApp?.desc}
             </DialogDescription>
           </DialogHeader>
-          <div className="py-6 flex flex-col items-center justify-center text-center space-y-4">
-            <div className="p-3 bg-secondary/30 rounded-full border border-border">
-              <Settings className="w-8 h-8 text-muted-foreground opacity-50" />
+          
+          {activeSettingsApp?.name === "Send Personal Notification" ? (
+            <div className="py-4 space-y-6">
+              <div className="space-y-2">
+                <Label className="font-bold text-sm">Prompt Configuration</Label>
+                <p className="text-xs text-muted-foreground">Instructions for which cases or conditions should trigger notification to human/admin</p>
+                <Textarea 
+                  value={notifPrompt}
+                  onChange={e => setNotifPrompt(e.target.value)}
+                  placeholder="e.g. Trigger notification if user asks for refund..."
+                  className="h-24 text-sm"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <Label className="font-bold text-sm">Phone Numbers Configuration</Label>
+                    <p className="text-xs text-muted-foreground">List of WA numbers that will receive the notification</p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => setNotifPhones([...notifPhones, ""])}>
+                    <Plus className="w-4 h-4 mr-1" /> Add
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  {notifPhones.map((phone, idx) => (
+                    <div key={idx} className="flex gap-2 items-center">
+                      <Input 
+                        value={phone} 
+                        onChange={e => {
+                          const newPhones = [...notifPhones];
+                          newPhones[idx] = e.target.value;
+                          setNotifPhones(newPhones);
+                        }}
+                        placeholder="e.g. 628123456789" 
+                      />
+                      <Button variant="ghost" size="icon" onClick={() => setNotifPhones(notifPhones.filter((_, i) => i !== idx))} className="text-destructive hover:bg-destructive/10">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  {notifPhones.length === 0 && <p className="text-xs text-muted-foreground italic">No phone numbers added.</p>}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <Label className="font-bold text-sm">Input Configuration</Label>
+                    <p className="text-xs text-muted-foreground">List of inputs extracted from chat</p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => setNotifInputs([...notifInputs, ""])}>
+                    <Plus className="w-4 h-4 mr-1" /> Add
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  {notifInputs.map((inputKey, idx) => (
+                    <div key={idx} className="flex gap-2 items-center">
+                      <Input 
+                        value={inputKey} 
+                        onChange={e => {
+                          const newInputs = [...notifInputs];
+                          newInputs[idx] = e.target.value;
+                          setNotifInputs(newInputs);
+                        }}
+                        placeholder="e.g. CustomerName, IssueType" 
+                      />
+                      <Button variant="ghost" size="icon" onClick={() => setNotifInputs(notifInputs.filter((_, i) => i !== idx))} className="text-destructive hover:bg-destructive/10">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  {notifInputs.length === 0 && <p className="text-xs text-muted-foreground italic">No inputs added.</p>}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="font-bold text-sm">Select a WhatsApp Inbox</Label>
+                <p className="text-xs text-muted-foreground">Select the WA Inbox that will receive notification messages</p>
+                <select 
+                  value={notifInboxId}
+                  onChange={e => setNotifInboxId(e.target.value)}
+                  className="w-full p-2 border border-border rounded-md text-sm bg-background"
+                >
+                  <option value="">-- Select Device --</option>
+                  {allDevices.map(d => (
+                    <option key={d.id} value={d.id}>{d.name} ({d.phoneNumber})</option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <p className="text-sm text-muted-foreground max-w-[250px]">
-              Advanced configuration for this integration is currently under development. It will be available in the next update.
-            </p>
-          </div>
+          ) : (
+            <div className="py-6 flex flex-col items-center justify-center text-center space-y-4">
+              <div className="p-3 bg-secondary/30 rounded-full border border-border">
+                <Settings className="w-8 h-8 text-muted-foreground opacity-50" />
+              </div>
+              <p className="text-sm text-muted-foreground max-w-[250px]">
+                Advanced configuration for this integration is currently under development. It will be available in the next update.
+              </p>
+            </div>
+          )}
+
           <DialogFooter>
-            <Button onClick={() => setActiveSettingsApp(null)}>Close</Button>
+            <Button variant="outline" onClick={() => setActiveSettingsApp(null)}>Close</Button>
+            {activeSettingsApp?.name === "Send Personal Notification" && (
+              <Button onClick={handleSaveNotification} disabled={savingNotif}>
+                {savingNotif ? "Saving..." : "Save Configuration"}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

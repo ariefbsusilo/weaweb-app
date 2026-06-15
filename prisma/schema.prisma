@@ -203,9 +203,10 @@ model AiIntegration {
   deviceId    String
   name        String
   description String?
-  provider    String   @default("custom") // make, zapier, custom_crm, custom
+  provider    String   @default("custom") // make, zapier, custom_crm, custom, notification
   apiKey      String?
   webhookUrl  String?
+  configJson  String?  // To store complex configurations like Personal Notification rules
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

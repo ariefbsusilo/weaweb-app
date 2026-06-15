@@ -4,8 +4,9 @@ import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Check, CheckCheck, Trash2, MessageSquarePlus, Paperclip, X, Loader2, User, ChevronDown, Clock } from "lucide-react";
+import { Send, Check, CheckCheck, Trash2, MessageSquarePlus, Paperclip, X, Loader2, User, ChevronDown, Clock, Bot, AlertCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 export default function InboxPage() {
   const [conversations, setConversations] = useState<any[]>([]);
@@ -20,13 +21,29 @@ export default function InboxPage() {
   const [newPhone, setNewPhone] = useState("");
   const [newMsg, setNewMsg] = useState("");
   const [sendingNew, setSendingNew] = useState(false);
+  const [devices, setDevices] = useState<any[]>([]);
+  const [evaluating, setEvaluating] = useState(false);
+  const [evaluatingMessageId, setEvaluatingMessageId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchConversations();
     fetchAllContacts();
+    fetchDevices();
     const interval = setInterval(fetchConversations, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  const fetchDevices = async () => {
+    try {
+      const res = await fetch("/api/devices");
+      const data = await res.json();
+      if (data.success && data.data) {
+        setDevices(data.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch devices", error);
+    }
+  };
 
   const fetchAllContacts = async () => {
     try {
@@ -152,6 +169,29 @@ export default function InboxPage() {
     }
   };
 
+  const handleEvaluate = async (deviceId: string) => {
+    if (!activeContactId || !evaluatingMessageId) return;
+    setEvaluating(true);
+    try {
+      const res = await fetch("/api/v1/inbox/evaluate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contactId: activeContactId, messageId: evaluatingMessageId, deviceId })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert("Evaluation submitted successfully. Check the AI dashboard for details.");
+        setEvaluatingMessageId(null);
+      } else {
+        alert(data.error || "Failed to evaluate");
+      }
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    } finally {
+      setEvaluating(false);
+    }
+  };
+
   return (
     <div className="h-[calc(100vh-8rem)] flex bg-card rounded-[0.35rem] border border-border shadow-sm overflow-hidden animate-in fade-in zoom-in-95 duration-500 relative">
       <div className="w-1/3 border-r border-border flex flex-col bg-card z-10">
@@ -223,13 +263,15 @@ export default function InboxPage() {
         
         {activeContactId && activeConversation ? (
           <>
-            <div className="px-5 py-3 border-b border-border bg-card flex items-center gap-3 z-20 sticky top-0 shadow-sm">
-              <div className={`w-10 h-10 rounded-[0.35rem] flex items-center justify-center font-bold text-xs shadow-md ${getAvatarColor(activeConversation.name && activeConversation.name !== "Unknown" ? activeConversation.name : `+${activeConversation.phoneNumber}`)}`}>
-                 {getInitials(activeConversation.name !== "Unknown" ? activeConversation.name : activeConversation.phoneNumber.replace('@lid', ''))}
-              </div>
-              <div>
-                <h3 className="font-extrabold text-foreground text-base tracking-tight">{activeConversation.name && activeConversation.name !== "Unknown" ? activeConversation.name : `+${activeConversation.phoneNumber.replace('@lid', '')}`}</h3>
-                <p className="text-[11px] font-mono text-muted-foreground">{activeConversation.phoneNumber}</p>
+            <div className="px-5 py-3 border-b border-border bg-card flex items-center justify-between z-20 sticky top-0 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-[0.35rem] flex items-center justify-center font-bold text-xs shadow-md ${getAvatarColor(activeConversation.name && activeConversation.name !== "Unknown" ? activeConversation.name : `+${activeConversation.phoneNumber}`)}`}>
+                  {getInitials(activeConversation.name !== "Unknown" ? activeConversation.name : activeConversation.phoneNumber.replace('@lid', ''))}
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-foreground text-base tracking-tight">{activeConversation.name && activeConversation.name !== "Unknown" ? activeConversation.name : `+${activeConversation.phoneNumber.replace('@lid', '')}`}</h3>
+                  <p className="text-[11px] font-mono text-muted-foreground">{activeConversation.phoneNumber}</p>
+                </div>
               </div>
             </div>
             
@@ -266,6 +308,11 @@ export default function InboxPage() {
                             <DropdownMenuItem onClick={() => navigator.clipboard.writeText(msg.content)} className="cursor-pointer font-bold text-foreground">
                               <span className="text-xs">Copy</span>
                             </DropdownMenuItem>
+                            {isOutbound && (
+                              <DropdownMenuItem onClick={() => setEvaluatingMessageId(msg.id)} className="cursor-pointer font-bold text-foreground focus:bg-primary/10 focus:text-primary">
+                                <Bot className="h-4 w-4 mr-2" /> Evaluate AI
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem onClick={() => deleteMessage(msg.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer font-bold">
                               <Trash2 className="h-4 w-4 mr-2" /> Delete
                             </DropdownMenuItem>
@@ -420,6 +467,46 @@ export default function InboxPage() {
         </motion.div>
       )}
       </AnimatePresence>
+
+      {/* Evaluate AI Dialog */}
+      <Dialog open={!!evaluatingMessageId} onOpenChange={(open) => !open && setEvaluatingMessageId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Evaluate AI Response</DialogTitle>
+            <DialogDescription>
+              Select the device/integration to use for evaluating this message. The AI will analyze the conversation leading up to this point and provide a score.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            {devices.length === 0 ? (
+              <div className="p-3 text-sm text-muted-foreground flex items-start gap-2 bg-secondary/30 rounded-md">
+                <AlertCircle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
+                <p>No devices found. Please configure a device in the dashboard first.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {devices.map(d => (
+                  <Button 
+                    key={d.id} 
+                    variant="outline" 
+                    className="w-full justify-start h-auto py-3 px-4"
+                    onClick={() => handleEvaluate(d.id)}
+                    disabled={evaluating}
+                  >
+                    <div className="flex flex-col items-start gap-1 text-left">
+                      <span className="font-bold">{d.name}</span>
+                      <span className="text-xs text-muted-foreground">{d.phoneNumber}</span>
+                    </div>
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEvaluatingMessageId(null)} disabled={evaluating}>Cancel</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

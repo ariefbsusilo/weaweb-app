@@ -62,6 +62,7 @@ export async function initWhatsApp(deviceId: string, tenantId: string, forceRecr
     logger,
     printQRInTerminal: false,
     auth: state,
+    syncFullHistory: false,
     browser: ["WEAWEB SaaS", "Chrome", "1.0.0"],
   });
 
@@ -118,6 +119,12 @@ export async function initWhatsApp(deviceId: string, tenantId: string, forceRecr
     if (m.type !== "notify") return;
     for (const msg of m.messages) {
       if (!msg.message) continue;
+
+      const msgTimestamp = msg.messageTimestamp ? (typeof msg.messageTimestamp === 'number' ? msg.messageTimestamp : (msg.messageTimestamp as any).low || (msg.messageTimestamp as any).toNumber?.() || Math.floor(Date.now() / 1000)) * 1000 : Date.now();
+      // Ignore messages older than 2 minutes to prevent syncing old unread history on connection
+      if (Date.now() - msgTimestamp > 2 * 60 * 1000) {
+        continue;
+      }
       
       const remoteJid = msg.key.remoteJid;
       if (!remoteJid || remoteJid === "status@broadcast" || remoteJid.includes("@newsletter")) continue; // Ignore status, channels
@@ -195,6 +202,17 @@ export async function initWhatsApp(deviceId: string, tenantId: string, forceRecr
       }
 
       // Save incoming message ONLY if contact is saved in Weaweb
+      if (!contact) {
+        // Auto-create contact for new inbound users
+        contact = await prisma.contact.create({
+          data: {
+            tenantId,
+            phoneNumber,
+            name: msg.pushName || phoneNumber
+          }
+        });
+      }
+
       if (contact) {
           await prisma.message.create({
               data: {
@@ -206,7 +224,7 @@ export async function initWhatsApp(deviceId: string, tenantId: string, forceRecr
                   status: "delivered",
                   direction: "inbound",
                   whatsappId: msg.key.id || `wa-${Date.now()}`,
-                  createdAt: msg.messageTimestamp ? new Date(Number(msg.messageTimestamp) * 1000) : new Date(),
+                  createdAt: msg.messageTimestamp ? new Date((typeof msg.messageTimestamp === 'number' ? msg.messageTimestamp : (msg.messageTimestamp as any).low || Math.floor(Date.now()/1000)) * 1000) : new Date(),
                   senderName: msg.pushName || (msg.key.participant ? msg.key.participant.split('@')[0] : null)
               }
           });
