@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Loader2, ArrowLeft, Bot, Save, Settings, BookOpen, Link2, Clock, ListChecks, Network, User as UserIcon, RefreshCw } from "lucide-react";
+import { Loader2, ArrowLeft, Bot, Save, Settings, BookOpen, Link2, Clock, ListChecks, Network, User as UserIcon, RefreshCw, Plus } from "lucide-react";
+import { ReactFlow, Background, Controls, Node, Edge, addEdge, useNodesState, useEdgesState } from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 
 export default function AiConfigPage() {
   const params = useParams();
@@ -28,6 +30,16 @@ export default function AiConfigPage() {
   const [provider, setProvider] = useState("gemini");
   const [apiKey, setApiKey] = useState("");
   const [prompt, setPrompt] = useState("");
+  
+  // React Flow State
+  const initialNodes: Node[] = [
+    { id: '1', position: { x: 50, y: 50 }, data: { label: 'Supervisor Agent' }, type: 'input' },
+    { id: '2', position: { x: 50, y: 200 }, data: { label: 'Sales Agent' } },
+  ];
+  const initialEdges: Edge[] = [{ id: 'e1-2', source: '1', target: '2', label: 'If asking about price', animated: true }];
+  
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
   const tabs = [
     { id: "General", icon: Settings },
@@ -93,79 +105,197 @@ export default function AiConfigPage() {
   }
 
   const renderTabContent = () => {
-    if (activeTab === "General") {
-      return (
-        <div className="space-y-6 animate-in fade-in duration-300">
-          <div className="text-center space-y-1 mb-8">
-             <h3 className="text-2xl font-bold">{device?.name || "Device Name"}</h3>
-             <p className="text-muted-foreground text-sm">Description</p>
-             <p className="text-xs font-semibold mt-2">Last Trained: 10:17</p>
-          </div>
-
-          <div className="space-y-4">
-            <div className="text-center">
-              <h4 className="text-[#38bdf8] font-bold text-lg">AI Agent Behavior</h4>
-              <p className="text-sm text-muted-foreground">This is the AI Prompt that defines the AI's speaking style and identity.</p>
+    switch (activeTab) {
+      case "General":
+        return (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="text-center space-y-1 mb-8">
+               <h3 className="text-2xl font-bold">{device?.name || "Device Name"}</h3>
+               <p className="text-muted-foreground text-sm">Description</p>
+               <p className="text-xs font-semibold mt-2">Last Trained: 10:17</p>
             </div>
-            
-            <Textarea 
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              className="min-h-[300px] font-mono text-sm resize-y rounded-md"
-              placeholder="Enter your system prompt here..."
-            />
-          </div>
 
-          <div className="space-y-4 mt-8 pt-8 border-t border-border/50">
-            <h4 className="font-bold text-lg text-center text-foreground">Advanced Settings</h4>
-            
-            <div className="flex items-center justify-between p-4 bg-secondary/30 rounded-lg border border-border">
-              <div className="space-y-0.5">
-                <Label className="text-base font-bold">Enable AI Auto-Reply</Label>
-                <p className="text-sm text-muted-foreground">If enabled, the AI will reply to incoming messages.</p>
+            <div className="space-y-4">
+              <div className="text-center">
+                <h4 className="text-[#38bdf8] font-bold text-lg">AI Agent Behavior</h4>
+                <p className="text-sm text-muted-foreground">This is the AI Prompt that defines the AI's speaking style and identity.</p>
               </div>
-              <Switch checked={isActive} onCheckedChange={setIsActive} />
-            </div>
-
-            <div className="grid gap-4">
-              <Label htmlFor="provider" className="font-bold">AI Provider</Label>
-              <select 
-                id="provider"
-                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                value={provider}
-                onChange={(e) => setProvider(e.target.value)}
-              >
-                <option value="gemini">Google Gemini</option>
-                <option value="openai">OpenAI (ChatGPT)</option>
-              </select>
-            </div>
-
-            <div className="grid gap-4">
-              <Label htmlFor="apiKey" className="font-bold">API Key</Label>
-              <Input 
-                id="apiKey" 
-                type="password"
-                placeholder={`Enter your ${provider === 'gemini' ? 'Gemini' : 'OpenAI'} API Key`}
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
+              
+              <Textarea 
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                className="min-h-[300px] font-mono text-sm resize-y rounded-md"
+                placeholder="Enter your system prompt here..."
               />
             </div>
-          </div>
-        </div>
-      );
-    }
 
-    return (
-      <div className="flex flex-col items-center justify-center h-64 text-center animate-in fade-in duration-300">
-        <div className="w-16 h-16 bg-secondary/50 rounded-full flex items-center justify-center mb-4">
-          <Bot className="w-8 h-8 text-muted-foreground opacity-50" />
-        </div>
-        <h3 className="font-bold text-lg text-foreground">{activeTab}</h3>
-        <p className="text-sm text-muted-foreground mt-2 max-w-sm">
-          This section is currently under construction. Check back later for updates.
-        </p>
-      </div>
-    );
+            <div className="space-y-4 mt-8 pt-8 border-t border-border/50">
+              <h4 className="font-bold text-lg text-center text-foreground">Advanced Settings</h4>
+              
+              <div className="flex items-center justify-between p-4 bg-secondary/30 rounded-lg border border-border">
+                <div className="space-y-0.5">
+                  <Label className="text-base font-bold">Enable AI Auto-Reply</Label>
+                  <p className="text-sm text-muted-foreground">If enabled, the AI will reply to incoming messages.</p>
+                </div>
+                <Switch checked={isActive} onCheckedChange={setIsActive} />
+              </div>
+
+              <div className="grid gap-4">
+                <Label htmlFor="provider" className="font-bold">AI Provider</Label>
+                <select 
+                  id="provider"
+                  className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  value={provider}
+                  onChange={(e) => setProvider(e.target.value)}
+                >
+                  <option value="gemini">Google Gemini</option>
+                  <option value="openai">OpenAI (ChatGPT)</option>
+                </select>
+              </div>
+
+              <div className="grid gap-4">
+                <Label htmlFor="apiKey" className="font-bold">API Key</Label>
+                <Input 
+                  id="apiKey" 
+                  type="password"
+                  placeholder={`Enter your ${provider === 'gemini' ? 'Gemini' : 'OpenAI'} API Key`}
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+        );
+
+      case "Knowledge Sources":
+        return (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="text-center space-y-1 mb-8">
+               <h3 className="text-2xl font-bold">Knowledge Base (RAG)</h3>
+               <p className="text-muted-foreground text-sm">Upload documents or add text for the AI to learn from.</p>
+            </div>
+            
+            <div className="border-2 border-dashed border-border rounded-xl p-8 text-center bg-secondary/20 hover:bg-secondary/40 transition-colors cursor-pointer">
+              <BookOpen className="w-10 h-10 mx-auto text-muted-foreground mb-4 opacity-50" />
+              <p className="font-semibold text-foreground">Click to upload or drag and drop</p>
+              <p className="text-sm text-muted-foreground mt-1">PDF, TXT, or DOCX (Max 5MB)</p>
+              <Button variant="outline" className="mt-4">Browse Files</Button>
+            </div>
+            
+            <div className="space-y-4 mt-8">
+              <h4 className="font-bold text-lg">Stored Knowledge</h4>
+              <div className="bg-card border border-border rounded-lg p-4 text-center text-sm text-muted-foreground">
+                No knowledge sources added yet.
+              </div>
+            </div>
+          </div>
+        );
+
+      case "Integrations":
+        return (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="text-center space-y-1 mb-8">
+               <h3 className="text-2xl font-bold">API Integrations</h3>
+               <p className="text-muted-foreground text-sm">Connect third-party services via API Keys or Webhooks.</p>
+            </div>
+            
+            <div className="grid gap-4 p-4 border border-border rounded-lg bg-card">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-bold">Make.com Webhook</h4>
+                  <p className="text-xs text-muted-foreground">Trigger a Make.com scenario.</p>
+                </div>
+                <Switch />
+              </div>
+              <Input placeholder="https://hook.make.com/..." />
+            </div>
+
+            <div className="grid gap-4 p-4 border border-border rounded-lg bg-card">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-bold">Zapier Webhook</h4>
+                  <p className="text-xs text-muted-foreground">Trigger a Zapier workflow.</p>
+                </div>
+                <Switch />
+              </div>
+              <Input placeholder="https://hooks.zapier.com/..." />
+            </div>
+          </div>
+        );
+
+      case "Followups":
+        return (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="text-center space-y-1 mb-8">
+               <h3 className="text-2xl font-bold">Auto Follow-ups</h3>
+               <p className="text-muted-foreground text-sm">Automate replies when customers stop responding.</p>
+            </div>
+
+            <div className="p-4 border border-border rounded-lg bg-card space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="font-bold">Condition: No Reply For</Label>
+                <select className="p-2 border border-border rounded-md text-sm">
+                  <option value="1h">1 Hour</option>
+                  <option value="24h">24 Hours</option>
+                  <option value="48h">48 Hours</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label className="font-bold">Follow-up Action / Prompt</Label>
+                <Textarea placeholder="e.g. Ask the user if they still need help with the pricing..." />
+              </div>
+              <Button variant="secondary" className="w-full">Add Rule</Button>
+            </div>
+          </div>
+        );
+
+      case "Evaluation":
+        return (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="text-center space-y-1 mb-8">
+               <h3 className="text-2xl font-bold">AI Evaluation Logs</h3>
+               <p className="text-muted-foreground text-sm">Review AI chat scores and performance feedback.</p>
+            </div>
+            
+            <div className="flex flex-col items-center justify-center h-48 border border-border rounded-lg bg-secondary/10">
+              <ListChecks className="w-8 h-8 text-muted-foreground opacity-50 mb-2" />
+              <p className="text-sm text-muted-foreground">No evaluation logs available yet.</p>
+            </div>
+          </div>
+        );
+
+      case "Orchestration":
+        return (
+          <div className="space-y-6 animate-in fade-in duration-300 h-full flex flex-col">
+            <div className="text-center space-y-1 mb-4 flex-shrink-0">
+               <h3 className="text-2xl font-bold">Agent Orchestrator</h3>
+               <p className="text-muted-foreground text-sm">Drag and drop to route between multiple AI Personas.</p>
+            </div>
+            
+            <div className="flex-1 w-full border border-border rounded-lg overflow-hidden bg-white/50 relative min-h-[400px]">
+              <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                fitView
+              >
+                <Background />
+                <Controls />
+              </ReactFlow>
+              <div className="absolute top-4 right-4 z-10">
+                <Button size="sm" className="shadow-md">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Agent Node
+                </Button>
+              </div>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
   };
 
   return (

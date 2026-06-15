@@ -256,11 +256,11 @@ export async function initWhatsApp(deviceId: string, tenantId: string, forceRecr
         try {
           const aiConfig = await prisma.aiConfig.findUnique({ where: { deviceId } });
           if (aiConfig && aiConfig.isActive && aiConfig.apiKey) {
-            const aiData = await prisma.aiData.findMany({ where: { deviceId } });
+            const aiKnowledgeSources = await prisma.aiKnowledgeSource.findMany({ where: { deviceId } });
             
             let systemPrompt = aiConfig.prompt || "You are a helpful WhatsApp assistant.";
-            if (aiData.length > 0) {
-              systemPrompt += "\n\nKnowledge Base (Use this to answer questions accurately):\n" + aiData.map(d => `${d.title}:\n${d.content}`).join("\n\n");
+            if (aiKnowledgeSources.length > 0) {
+              systemPrompt += "\n\nKnowledge Base (Use this to answer questions accurately):\n" + aiKnowledgeSources.map(d => `${d.title}:\n${d.content}`).join("\n\n");
             }
             systemPrompt += "\n\nKeep your answers concise, friendly, and suitable for WhatsApp. Answer in Indonesian unless requested otherwise.";
 

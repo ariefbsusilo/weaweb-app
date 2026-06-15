@@ -350,11 +350,6 @@ export default function DevicesPage() {
                         <Bot className="w-4 h-4" />
                       </Button>
                     </Link>
-                    <Link href={`/dashboard/devices/${device.id}/ai-data`}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground" title="AI Data">
-                        <Database className="w-4 h-4" />
-                      </Button>
-                    </Link>
                     
                     <DropdownMenu>
                       <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 rounded-md bg-transparent hover:bg-secondary focus-visible:outline-none transition-colors">

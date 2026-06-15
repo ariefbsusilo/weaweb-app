@@ -65,7 +65,12 @@ model Device {
   updatedAt   DateTime @updatedAt
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   aiConfig    AiConfig?
-  aiData      AiData[]
+  aiKnowledgeSources AiKnowledgeSource[]
+  aiIntegrations AiIntegration[]
+  aiFollowupRules AiFollowupRule[]
+  aiEvaluationLogs AiEvaluationLog[]
+  aiOrchestrationNodes AiOrchestrationNode[]
+  aiOrchestrationEdges AiOrchestrationEdge[]
 
   @@unique([tenantId, phoneNumber])
 }
@@ -179,12 +184,79 @@ model AiConfig {
   device      Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 }
 
-model AiData {
+model AiKnowledgeSource {
   id          String   @id @default(cuid())
   deviceId    String
   title       String
-  content     String   
+  type        String   @default("text") // text, url, pdf
+  content     String
+  metadata    String?  // JSON for extra source data
+  vectorStatus String  @default("PENDING") // PENDING, EMBEDDED, FAILED
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   device      Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+}
+
+model AiIntegration {
+  id          String   @id @default(cuid())
+  deviceId    String
+  name        String
+  provider    String   // make, zapier, custom_crm
+  apiKey      String?
+  webhookUrl  String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  device      Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+}
+
+model AiFollowupRule {
+  id          String   @id @default(cuid())
+  deviceId    String
+  name        String
+  condition   String   // e.g., "NO_REPLY_24H"
+  delayMinutes Int     @default(1440)
+  actionPrompt String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  device      Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+}
+
+model AiEvaluationLog {
+  id          String   @id @default(cuid())
+  deviceId    String
+  contactId   String
+  score       Int      // 1-10
+  feedback    String?
+  logData     String?  // JSON string of the chat snippet
+  createdAt   DateTime @default(now())
+  device      Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+}
+
+model AiOrchestrationNode {
+  id          String   @id @default(cuid())
+  deviceId    String
+  name        String   // e.g., Sales Agent, Support Agent
+  prompt      String
+  positionX   Float    @default(0)
+  positionY   Float    @default(0)
+  isEntryNode Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  device      Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  sourceEdges AiOrchestrationEdge[] @relation("SourceNode")
+  targetEdges AiOrchestrationEdge[] @relation("TargetNode")
+}
+
+model AiOrchestrationEdge {
+  id          String   @id @default(cuid())
+  deviceId    String
+  sourceId    String
+  targetId    String
+  condition   String   // The instruction/condition to route here
+  createdAt   DateTime @default(now())
+  device      Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  source      AiOrchestrationNode @relation("SourceNode", fields: [sourceId], references: [id], onDelete: Cascade)
+  target      AiOrchestrationNode @relation("TargetNode", fields: [targetId], references: [id], onDelete: Cascade)
 }
