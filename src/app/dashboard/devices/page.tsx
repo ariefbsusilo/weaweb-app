@@ -367,8 +367,8 @@ export default function DevicesPage() {
                             <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48 rounded-[0.5rem] border-border shadow-md">
-                          <DropdownMenuLabel className="font-bold text-xs text-muted-foreground uppercase tracking-wider">Options</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
+                          <div className="px-2 py-1.5 font-bold text-xs text-muted-foreground uppercase tracking-wider">Options</div>
+                          <hr className="my-1 border-border" />
                           
                           <DropdownMenuItem 
                             className="font-medium cursor-pointer rounded-[0.25rem] focus:bg-secondary"
@@ -393,14 +393,13 @@ export default function DevicesPage() {
                             <GitMerge className="w-4 h-4 mr-2 text-muted-foreground" /> Chat Flow
                           </DropdownMenuItem>
                           
-                          <DropdownMenuSeparator />
+                          <hr className="my-1 border-border" />
                           
                           <DropdownMenuItem 
                             className="font-medium cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive rounded-[0.25rem]"
-                            onClick={async () => {
+                            onClick={() => {
                               if (confirm("Are you sure you want to delete this device? This action cannot be undone.")) {
-                                await fetch(`/api/devices/${device.id}`, { method: "DELETE" });
-                                fetchDevices();
+                                fetch(`/api/devices/${device.id}`, { method: "DELETE" }).then(() => fetchDevices());
                               }
                             }}
                           >
