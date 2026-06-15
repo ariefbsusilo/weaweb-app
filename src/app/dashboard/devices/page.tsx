@@ -138,53 +138,82 @@ export default function DevicesPage() {
   return (
     <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
       
-      {/* Top Stats */}
+      {/* Premium Top Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-card border border-border/50 rounded-[0.5rem] p-6 flex items-center gap-5 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <div className="w-14 h-14 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center rounded-[0.5rem] border border-primary/10 shadow-inner z-10">
-            <MonitorSmartphone className="w-7 h-7 text-primary" />
+        
+        {/* Total Devices Card */}
+        <div className="rounded-2xl p-6 flex flex-col justify-between shadow-xl relative overflow-hidden group bg-gradient-to-br from-indigo-600 to-blue-700 text-white border-0">
+          <div className="absolute top-0 right-0 p-16 bg-white/10 blur-[50px] rounded-full mix-blend-overlay -z-0"></div>
+          <div className="absolute -bottom-10 -left-10 p-20 bg-black/10 blur-[40px] rounded-full mix-blend-overlay -z-0"></div>
+          <div className="flex items-start justify-between z-10">
+            <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl border border-white/20 shadow-inner">
+              <MonitorSmartphone className="w-7 h-7 text-white" />
+            </div>
+            <div className="px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/10 text-xs font-bold tracking-widest uppercase">
+              Devices
+            </div>
           </div>
-          <div className="z-10">
-            <p className="text-muted-foreground font-bold uppercase tracking-widest text-[10px] mb-1">Total Devices</p>
-            <h3 className="text-3xl font-extrabold text-foreground font-mono tracking-tight">{devices.length}</h3>
+          <div className="mt-6 z-10">
+            <h3 className="text-4xl font-black tracking-tight">{devices.length}</h3>
+            <p className="text-indigo-100 font-medium text-sm mt-1 opacity-90">Total registered numbers</p>
           </div>
         </div>
         
-        <div className="bg-card border border-border/50 rounded-[0.5rem] p-6 flex items-center gap-5 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <div className="w-14 h-14 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 flex items-center justify-center rounded-[0.5rem] border border-emerald-500/10 shadow-inner z-10">
-            <Link2 className="w-7 h-7 text-emerald-500" />
+        {/* Connected Card */}
+        <div className="rounded-2xl p-6 flex flex-col justify-between shadow-xl relative overflow-hidden group bg-gradient-to-br from-emerald-500 to-teal-600 text-white border-0">
+          <div className="absolute top-0 right-0 p-16 bg-white/10 blur-[50px] rounded-full mix-blend-overlay -z-0"></div>
+          <div className="absolute -bottom-10 -left-10 p-20 bg-black/10 blur-[40px] rounded-full mix-blend-overlay -z-0"></div>
+          <div className="flex items-start justify-between z-10">
+            <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl border border-white/20 shadow-inner">
+              <Link2 className="w-7 h-7 text-white" />
+            </div>
+            <div className="px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/10 text-xs font-bold tracking-widest uppercase">
+              Status
+            </div>
           </div>
-          <div className="z-10">
-            <p className="text-muted-foreground font-bold uppercase tracking-widest text-[10px] mb-1">Connected</p>
-            <h3 className="text-3xl font-extrabold text-foreground font-mono tracking-tight">{devices.filter(d => d.status === 'connect').length}</h3>
+          <div className="mt-6 z-10">
+            <h3 className="text-4xl font-black tracking-tight">{devices.filter(d => d.status === 'connect').length}</h3>
+            <p className="text-emerald-100 font-medium text-sm mt-1 opacity-90">Currently connected</p>
           </div>
         </div>
         
-        <div className="bg-card border border-border/50 rounded-[0.5rem] p-6 flex items-center gap-5 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <div className="w-14 h-14 bg-gradient-to-br from-blue-500/10 to-blue-500/5 flex items-center justify-center rounded-[0.5rem] border border-blue-500/10 shadow-inner z-10">
-            <CheckCheck className="w-7 h-7 text-blue-500" />
+        {/* Messages Card */}
+        <div className="rounded-2xl p-6 flex flex-col justify-between shadow-xl relative overflow-hidden group bg-gradient-to-br from-fuchsia-600 to-purple-700 text-white border-0">
+          <div className="absolute top-0 right-0 p-16 bg-white/10 blur-[50px] rounded-full mix-blend-overlay -z-0"></div>
+          <div className="absolute -bottom-10 -left-10 p-20 bg-black/10 blur-[40px] rounded-full mix-blend-overlay -z-0"></div>
+          <div className="flex items-start justify-between z-10">
+            <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl border border-white/20 shadow-inner">
+              <CheckCheck className="w-7 h-7 text-white" />
+            </div>
+            <div className="px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/10 text-xs font-bold tracking-widest uppercase">
+              Activity
+            </div>
           </div>
-          <div className="z-10">
-            <p className="text-muted-foreground font-bold uppercase tracking-widest text-[10px] mb-1">Messages Sent</p>
-            <h3 className="text-3xl font-extrabold text-foreground font-mono tracking-tight">0</h3>
+          <div className="mt-6 z-10">
+            <h3 className="text-4xl font-black tracking-tight">0</h3>
+            <p className="text-fuchsia-100 font-medium text-sm mt-1 opacity-90">Total messages sent</p>
           </div>
         </div>
       </div>
 
       {/* Header */}
-      <div className="flex justify-between items-end mt-10 mb-2">
-        <div>
-          <h2 className="text-2xl font-extrabold tracking-tight text-foreground">Devices Management</h2>
-          <p className="text-muted-foreground text-sm font-medium mt-1">Manage your connected WhatsApp numbers and AI configurations.</p>
+      <div className="flex flex-col md:flex-row md:justify-between md:items-end mt-12 mb-6 gap-4 relative">
+        <div className="relative z-10">
+          <div className="inline-flex items-center justify-center p-2 bg-primary/10 rounded-xl mb-3 border border-primary/20 shadow-sm">
+            <MonitorSmartphone className="w-5 h-5 text-primary" />
+          </div>
+          <h2 className="text-3xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+            Devices Management
+          </h2>
+          <p className="text-muted-foreground text-[15px] font-medium mt-1.5 max-w-lg">
+            Manage your connected WhatsApp numbers, check connection status, and configure AI chat assistants.
+          </p>
         </div>
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
           <DialogTrigger
             render={
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-[0.5rem] font-bold shadow-md hover:shadow-lg transition-all px-5 h-10">
-                <Plus className="w-4 h-4 mr-2" />
+              <Button className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 px-6 h-12 hover:-translate-y-0.5 active:translate-y-0">
+                <Plus className="w-5 h-5 mr-2" />
                 Add New Device
               </Button>
             }
@@ -267,91 +296,100 @@ export default function DevicesPage() {
       </div>
 
       {/* Table Section */}
-      <div className="bg-card rounded-[0.5rem] border border-border/50 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-border/50 bg-background/50 flex items-center">
-          <Search className="w-5 h-5 text-muted-foreground mr-3" />
-          <Input 
-            placeholder="Search devices by name or number..." 
-            className="w-full bg-transparent border-none rounded-none focus-visible:ring-0 px-0 text-foreground font-medium shadow-none"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+      <div className="bg-card rounded-2xl border border-border/40 shadow-xl overflow-hidden relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-secondary/50 to-transparent pointer-events-none z-0"></div>
+        <div className="p-5 border-b border-border/40 bg-background/40 backdrop-blur-xl flex items-center relative z-10">
+          <div className="relative w-full max-w-md">
+            <Search className="w-5 h-5 text-primary absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Input 
+              placeholder="Search devices by name or number..." 
+              className="w-full bg-background border-border/50 rounded-xl focus-visible:ring-primary pl-11 h-11 text-foreground font-medium shadow-sm transition-all hover:border-primary/50"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto relative z-10">
           <Table>
-            <TableHeader className="bg-muted/20">
-              <TableRow className="border-border/50 hover:bg-transparent">
-                <TableHead className="font-bold text-muted-foreground uppercase tracking-wider text-xs py-4">Device Info</TableHead>
-                <TableHead className="font-bold text-muted-foreground uppercase tracking-wider text-xs py-4">Package</TableHead>
-                <TableHead className="font-bold text-muted-foreground uppercase tracking-wider text-xs py-4 text-right">Actions</TableHead>
+            <TableHeader className="bg-secondary/40 backdrop-blur-sm">
+              <TableRow className="border-border/40 hover:bg-transparent">
+                <TableHead className="font-extrabold text-muted-foreground uppercase tracking-widest text-[11px] py-4 pl-6">Device Info</TableHead>
+                <TableHead className="font-extrabold text-muted-foreground uppercase tracking-widest text-[11px] py-4">Package</TableHead>
+                <TableHead className="font-extrabold text-muted-foreground uppercase tracking-widest text-[11px] py-4 text-right pr-6">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {devices.length === 0 ? (
-                <TableRow className="border-border">
-                  <TableCell colSpan={3} className="h-48 text-center text-muted-foreground font-bold uppercase tracking-widest text-sm">
-                    No devices configured yet. Add your first device.
+                <TableRow className="border-border/40">
+                  <TableCell colSpan={3} className="h-64 text-center">
+                    <div className="flex flex-col items-center justify-center text-muted-foreground">
+                      <div className="w-16 h-16 bg-secondary/50 rounded-full flex items-center justify-center mb-4">
+                        <MonitorSmartphone className="w-8 h-8 opacity-50" />
+                      </div>
+                      <span className="font-bold uppercase tracking-widest text-sm">No devices found</span>
+                      <span className="text-xs mt-1">Add your first device to start connecting.</span>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : devices.map((device) => (
-                <TableRow key={device.id} className="border-border/50 hover:bg-muted/30 transition-colors group">
-                  <TableCell className="align-middle py-5">
+                <TableRow key={device.id} className="border-border/30 hover:bg-primary/5 transition-all duration-300 group">
+                  <TableCell className="align-middle py-6 pl-6">
                     <div className="space-y-2">
-                      <div className="flex items-center gap-2.5">
-                        <div className="bg-secondary p-1.5 rounded-md">
-                          <Smartphone className="w-4 h-4 text-muted-foreground" />
+                      <div className="flex items-center gap-3">
+                        <div className="bg-primary/10 p-2 rounded-lg border border-primary/10 group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">
+                          <Smartphone className="w-4 h-4 text-primary group-hover:text-primary-foreground" />
                         </div>
-                        <span className="font-extrabold text-foreground font-mono text-base">{device.phoneNumber}</span>
+                        <span className="font-extrabold text-foreground font-mono text-base tracking-tight">{device.phoneNumber}</span>
                       </div>
-                      <div className="flex items-center gap-2.5 ml-1">
-                        <User className="w-4 h-4 text-muted-foreground/70" />
-                        <span className="font-semibold text-muted-foreground text-sm">{device.name}</span>
+                      <div className="flex items-center gap-2.5 ml-2">
+                        <User className="w-4 h-4 text-muted-foreground/50" />
+                        <span className="font-semibold text-muted-foreground text-[13px]">{device.name}</span>
                       </div>
-                      <div className="flex items-center gap-2.5 ml-1.5 mt-1">
+                      <div className="flex items-center gap-2.5 ml-2.5 mt-1.5">
                         <span className="relative flex h-2.5 w-2.5">
                           {device.status === 'connect' && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>}
-                          <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${device.status === 'connect' ? 'bg-emerald-500' : 'bg-destructive'}`}></span>
+                          <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${device.status === 'connect' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-destructive'}`}></span>
                         </span>
-                        <span className={`text-xs font-bold uppercase tracking-wider ${device.status === 'connect' ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>
+                        <span className={`text-[11px] font-bold uppercase tracking-widest ${device.status === 'connect' ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>
                           {device.status === 'connect' ? 'Connected' : 'Disconnected'}
                         </span>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="align-middle py-5">
+                  <TableCell className="align-middle py-6">
                     <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="font-bold rounded-[0.35rem] px-3 py-1.5 text-xs bg-secondary text-secondary-foreground border border-border/50">
+                      <Badge variant="secondary" className="font-bold rounded-lg px-3 py-1.5 text-xs bg-secondary/80 text-secondary-foreground border border-border/50 shadow-sm backdrop-blur-sm group-hover:border-primary/30 transition-colors">
                         <Diamond className="w-3.5 h-3.5 mr-1.5 text-primary" />
                         {device.package}
                       </Badge>
                     </div>
                   </TableCell>
-                  <TableCell className="align-middle py-5 text-right">
+                  <TableCell className="align-middle py-6 text-right pr-6">
                     <div className="flex items-center justify-end gap-3 w-full">
                       
                       {/* Primary Actions */}
-                      <div className="flex items-center gap-2 bg-secondary/30 p-1.5 rounded-[0.5rem] border border-border/50">
+                      <div className="flex items-center gap-2 bg-background/50 backdrop-blur-md p-1.5 rounded-xl border border-border/50 shadow-sm group-hover:border-primary/20 transition-all">
                         {device.status === 'disconnect' ? (
                           <Button 
                             size="sm" 
-                            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-[0.35rem] h-9 px-4 shadow-sm transition-all"
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-lg h-9 px-4 shadow-sm transition-all"
                             onClick={() => handleConnect(device)}
                           >
                             <Link2 className="w-4 h-4 mr-2" /> Connect
                           </Button>
                         ) : (
-                          <Button variant="destructive" size="sm" className="font-bold rounded-[0.35rem] h-9 px-4 shadow-sm transition-all">
+                          <Button variant="destructive" size="sm" className="font-bold rounded-lg h-9 px-4 shadow-sm transition-all">
                             <Unplug className="w-4 h-4 mr-2" /> Disconnect
                           </Button>
                         )}
                         
-                        <div className="h-5 w-px bg-border mx-1"></div>
+                        <div className="h-5 w-px bg-border/50 mx-1"></div>
                         
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="font-bold rounded-[0.35rem] h-9 px-3 hover:bg-primary/10 hover:text-primary transition-all"
+                          className="font-bold rounded-lg h-9 px-3 hover:bg-primary/10 hover:text-primary transition-all"
                           onClick={() => {
                             setSelectedDeviceForKey(device);
                             setGeneratedApiKey(device.apiKey || null);
@@ -362,13 +400,13 @@ export default function DevicesPage() {
                         </Button>
                         
                         <Link href={`/dashboard/devices/${device.id}/ai`}>
-                          <Button variant="ghost" size="sm" className="font-bold rounded-[0.35rem] h-9 px-3 hover:bg-primary/10 hover:text-primary transition-all">
+                          <Button variant="ghost" size="sm" className="font-bold rounded-lg h-9 px-3 hover:bg-primary/10 hover:text-primary transition-all">
                             <Bot className="w-4 h-4 mr-2 text-primary" /> AI Config
                           </Button>
                         </Link>
                         
                         <Link href={`/dashboard/devices/${device.id}/ai-data`}>
-                          <Button variant="ghost" size="sm" className="font-bold rounded-[0.35rem] h-9 px-3 hover:bg-primary/10 hover:text-primary transition-all">
+                          <Button variant="ghost" size="sm" className="font-bold rounded-lg h-9 px-3 hover:bg-primary/10 hover:text-primary transition-all">
                             <Database className="w-4 h-4 mr-2 text-primary" /> AI Data
                           </Button>
                         </Link>
@@ -376,12 +414,12 @@ export default function DevicesPage() {
 
                       {/* Secondary Actions (Dropdown) */}
                       <DropdownMenu>
-                        <DropdownMenuTrigger className="inline-flex items-center justify-center h-9 w-9 rounded-[0.35rem] border border-border bg-background shadow-sm hover:bg-secondary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-                            <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                        <DropdownMenuTrigger className="inline-flex items-center justify-center h-10 w-10 rounded-xl border border-border/50 bg-background/80 backdrop-blur-md shadow-sm hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-all hover:border-primary/30">
+                            <MoreHorizontal className="w-5 h-5 text-muted-foreground" />
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48 rounded-[0.5rem] border-border shadow-md">
-                          <div className="px-2 py-1.5 font-bold text-xs text-muted-foreground uppercase tracking-wider">Options</div>
-                          <hr className="my-1 border-border" />
+                        <DropdownMenuContent align="end" className="w-52 rounded-xl border-border/50 shadow-xl p-1 bg-background/95 backdrop-blur-xl">
+                          <div className="px-3 py-2 font-black text-[10px] text-muted-foreground uppercase tracking-widest">Options</div>
+                          <hr className="my-1 border-border/40" />
                           
                           <DropdownMenuItem className="font-medium cursor-pointer rounded-[0.25rem] focus:bg-secondary">
                             <Edit className="w-4 h-4 mr-2 text-muted-foreground" /> Edit Device
