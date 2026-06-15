@@ -35,7 +35,7 @@ export async function initWhatsApp(deviceId: string, tenantId: string, forceRecr
     }
   }
 
-  const sessionDir = path.join(process.cwd(), "sessions", deviceId);
+  const sessionDir = path.join(process.cwd(), "data", "sessions", deviceId);
   if (forceRecreate) {
     qrStore.delete(deviceId);
     if (fs.existsSync(sessionDir)) {
