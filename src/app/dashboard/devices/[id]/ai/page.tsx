@@ -808,8 +808,6 @@ export default function AiConfigPage() {
         </Button>
       </div>
 
-    </div>
-
       {/* Settings Dialog */}
       <Dialog open={!!activeSettingsApp} onOpenChange={(open) => !open && setActiveSettingsApp(null)}>
         <DialogContent>

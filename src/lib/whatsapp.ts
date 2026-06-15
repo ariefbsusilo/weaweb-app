@@ -268,7 +268,7 @@ export async function initWhatsApp(deviceId: string, tenantId: string, forceRecr
             let success = false;
 
             if (aiConfig.provider === "gemini") {
-              const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${aiConfig.apiKey}`, {
+              const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${aiConfig.apiKey}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -294,7 +294,7 @@ export async function initWhatsApp(deviceId: string, tenantId: string, forceRecr
                    "Authorization": `Bearer ${aiConfig.apiKey}`
                  },
                  body: JSON.stringify({
-                   model: "gpt-3.5-turbo",
+                   model: "gpt-4o-mini",
                    messages: [
                      { role: "system", content: systemPrompt },
                      { role: "user", content: incomingText }
