@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, ArrowLeft, Bot, Save, Settings, BookOpen, Link2, Clock, ListChecks, Network, User as UserIcon, RefreshCw, Plus, BellRing, FileText, Image as ImageIcon, Globe, LayoutDashboard, ShoppingCart, DollarSign, Calendar, ShieldCheck, Table, MapPin, BadgeCheck, Zap, Eye, Edit2, Trash2 } from "lucide-react";
 import { ReactFlow, Background, Controls, Node, Edge, addEdge, useNodesState, useEdgesState } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 export default function AiConfigPage() {
   const params = useParams();
@@ -46,6 +47,7 @@ export default function AiConfigPage() {
   const [integrations, setIntegrations] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
   const [togglingIntegration, setTogglingIntegration] = useState<string | null>(null);
+  const [activeSettingsApp, setActiveSettingsApp] = useState<{name: string, desc: string} | null>(null);
 
   // Sandbox Chat State
   const [chatMessages, setChatMessages] = useState<{role: 'user' | 'model', text: string}[]>([]);
@@ -301,7 +303,7 @@ export default function AiConfigPage() {
               <Textarea 
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                className="min-h-[300px] font-mono text-sm resize-y rounded-md"
+                className="min-h-[200px] max-h-[400px] overflow-y-auto font-mono text-sm resize-y rounded-md"
                 placeholder="Enter your system prompt here..."
               />
             </div>
@@ -445,7 +447,7 @@ export default function AiConfigPage() {
                       <h4 className="font-bold text-base mb-1 relative z-10">{app.name}</h4>
                       <p className="text-xs text-muted-foreground mb-6 flex-1 relative z-10">{app.desc}</p>
                       <div className="flex items-center gap-2 relative z-10">
-                        <Button variant="outline" size="sm" className={`flex-1 h-8 text-xs ${isActive ? 'bg-white hover:bg-gray-50' : ''}`}>Settings</Button>
+                        <Button variant="outline" size="sm" className={`flex-1 h-8 text-xs ${isActive ? 'bg-white hover:bg-gray-50' : ''}`} onClick={() => setActiveSettingsApp({name: app.name, desc: app.desc})}>Settings</Button>
                         <Button 
                           variant={isActive ? "default" : "outline"} 
                           size="sm" 
@@ -493,7 +495,7 @@ export default function AiConfigPage() {
                       <h4 className="font-bold text-base mb-2">{tool.name}</h4>
                       <p className="text-xs text-muted-foreground mb-6 flex-1">{tool.desc}</p>
                       <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" className={`flex-1 h-8 text-xs ${isActive ? 'bg-white hover:bg-gray-50' : ''}`}>Settings</Button>
+                        <Button variant="outline" size="sm" className={`flex-1 h-8 text-xs ${isActive ? 'bg-white hover:bg-gray-50' : ''}`} onClick={() => setActiveSettingsApp({name: tool.name, desc: tool.desc})}>Settings</Button>
                         <Button 
                           variant={isActive ? "default" : "outline"} 
                           size="sm" 
@@ -806,6 +808,30 @@ export default function AiConfigPage() {
         </Button>
       </div>
 
+    </div>
+
+      {/* Settings Dialog */}
+      <Dialog open={!!activeSettingsApp} onOpenChange={(open) => !open && setActiveSettingsApp(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Settings: {activeSettingsApp?.name}</DialogTitle>
+            <DialogDescription>
+              {activeSettingsApp?.desc}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-6 flex flex-col items-center justify-center text-center space-y-4">
+            <div className="p-3 bg-secondary/30 rounded-full border border-border">
+              <Settings className="w-8 h-8 text-muted-foreground opacity-50" />
+            </div>
+            <p className="text-sm text-muted-foreground max-w-[250px]">
+              Advanced configuration for this integration is currently under development. It will be available in the next update.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setActiveSettingsApp(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
