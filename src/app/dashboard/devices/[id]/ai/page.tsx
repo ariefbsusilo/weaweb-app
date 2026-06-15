@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +46,47 @@ export default function AiConfigPage() {
   const [integrations, setIntegrations] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
   const [togglingIntegration, setTogglingIntegration] = useState<string | null>(null);
+
+  // Sandbox Chat State
+  const [chatMessages, setChatMessages] = useState<{role: 'user' | 'model', text: string}[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [isChatLoading, setIsChatLoading] = useState(false);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [chatMessages]);
+
+  const handleSendChatMessage = async () => {
+    if (!chatInput.trim() || isChatLoading) return;
+    
+    const userMessage = chatInput.trim();
+    setChatInput("");
+    setChatMessages(prev => [...prev, { role: "user", text: userMessage }]);
+    setIsChatLoading(true);
+
+    try {
+      const res = await fetch(`/api/devices/${deviceId}/sandbox`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          message: userMessage,
+          history: chatMessages 
+        })
+      });
+      const data = await res.json();
+      
+      if (!res.ok) throw new Error(data.error || "Failed to get reply");
+      
+      setChatMessages(prev => [...prev, { role: "model", text: data.reply }]);
+    } catch (error: any) {
+      setChatMessages(prev => [...prev, { role: "model", text: `Error: ${error.message}` }]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
 
   const tabs = [
     { id: "General", icon: Settings },
@@ -627,42 +668,96 @@ export default function AiConfigPage() {
       </div>
 
       {/* Content Area - Split View */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-0 overflow-hidden relative">
+      <div className={`flex-1 grid gap-0 overflow-hidden relative ${activeTab === "General" ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"}`}>
         
         {/* Left Side: Configuration */}
         <div className="h-full overflow-y-auto p-6 md:p-10 pb-32">
-          <div className="max-w-2xl mx-auto">
+          <div className={`${activeTab === "General" ? "max-w-2xl" : "max-w-4xl"} mx-auto`}>
             {renderTabContent()}
           </div>
         </div>
 
         {/* Right Side: Chat Preview */}
+        {activeTab === "General" && (
         <div className="h-full border-l border-border/50 bg-[#f9fafb] dark:bg-card/30 hidden lg:block p-8 pb-32">
           <div className="bg-white dark:bg-background border border-border/60 shadow-lg rounded-[1.5rem] h-[80vh] max-h-[800px] flex flex-col overflow-hidden max-w-md mx-auto relative">
             {/* Phone Header */}
             <div className="bg-white dark:bg-background border-b border-border/40 p-4 flex items-center justify-between shadow-sm z-10">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
-                  <UserIcon className="w-4 h-4 text-muted-foreground" />
+                  <Bot className="w-4 h-4 text-muted-foreground" />
                 </div>
-                <span className="font-semibold text-[15px]">{device?.name || "Device Name"}</span>
+                <span className="font-semibold text-[15px]">Sandbox Preview</span>
               </div>
-              <button className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-secondary">
+              <button 
+                onClick={() => setChatMessages([])}
+                className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-secondary"
+                title="Reset Chat"
+              >
                 <RefreshCw className="w-4 h-4" />
               </button>
             </div>
             
             {/* Phone Body (Chat Area) */}
-            <div className="flex-1 bg-[#efeae2] dark:bg-[#0b141a] p-4 flex flex-col items-center justify-center relative overflow-hidden">
-                <div className="text-center opacity-40">
+            <div 
+              ref={chatContainerRef}
+              className="flex-1 bg-[#efeae2] dark:bg-[#0b141a] p-4 flex flex-col overflow-y-auto gap-4"
+            >
+              {chatMessages.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center text-center opacity-40">
                   <Bot className="w-12 h-12 mx-auto mb-3" />
                   <p className="text-sm font-medium">Chat Preview Sandbox</p>
                   <p className="text-xs mt-1">Test your AI agent here</p>
                 </div>
+              ) : (
+                chatMessages.map((msg, i) => (
+                  <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${
+                      msg.role === 'user' 
+                        ? 'bg-blue-600 text-white rounded-tr-sm' 
+                        : 'bg-white dark:bg-zinc-800 text-foreground border border-border/50 rounded-tl-sm'
+                    }`}>
+                      {msg.text}
+                    </div>
+                  </div>
+                ))
+              )}
+              {isChatLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-white dark:bg-zinc-800 text-foreground border border-border/50 rounded-2xl rounded-tl-sm px-4 py-3 text-sm">
+                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Phone Input Area */}
+            <div className="bg-white dark:bg-background border-t border-border/40 p-3 flex gap-2 items-end">
+              <Textarea 
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendChatMessage();
+                  }
+                }}
+                placeholder="Type a message..."
+                className="min-h-[40px] max-h-[120px] resize-none rounded-xl bg-secondary/50 border-transparent focus-visible:ring-1"
+                rows={1}
+              />
+              <Button 
+                onClick={handleSendChatMessage}
+                disabled={!chatInput.trim() || isChatLoading}
+                size="icon" 
+                className="h-10 w-10 shrink-0 rounded-xl bg-blue-600 hover:bg-blue-700"
+              >
+                <Zap className="w-4 h-4 text-white" />
+              </Button>
             </div>
           </div>
         </div>
-
+        )}
       </div>
 
       {/* Sticky Bottom Save Button */}
