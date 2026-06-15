@@ -63,7 +63,7 @@ export async function POST(req: Request) {
     try {
       console.log(`[API Send] Sending message directly for tenant ${device.tenantId} to ${phoneNumber}`);
       
-      const finalContent = content + "\n\n> _Sent via Weaweb _";
+      const finalContent = content + "\n\n> _Sent via Weaweb_";
       let msg: any = { text: finalContent };
 
       if (mediaUrl) {
@@ -188,7 +188,7 @@ export async function GET(req: Request) {
     try {
       console.log(`[API Send] Sending message directly for tenant ${device.tenantId} to ${phoneNumber}`);
       
-      const finalContent = content + "\n\n> _Sent via Weaweb _";
+      const finalContent = content + "\n\n> _Sent via Weaweb_";
       let msg: any = { text: finalContent };
 
       if (mediaUrl) {
