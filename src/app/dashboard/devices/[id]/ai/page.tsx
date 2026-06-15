@@ -41,6 +41,12 @@ export default function AiConfigPage() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
+  // Extensibility State
+  const [knowledgeSources, setKnowledgeSources] = useState<any[]>([]);
+  const [integrations, setIntegrations] = useState<any[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [togglingIntegration, setTogglingIntegration] = useState<string | null>(null);
+
   const tabs = [
     { id: "General", icon: Settings },
     { id: "Knowledge Sources", icon: BookOpen },
@@ -69,6 +75,37 @@ export default function AiConfigPage() {
           setApiKey(data.apiKey || "");
           setPrompt(data.prompt || "You are a helpful WhatsApp assistant.");
         }
+
+        // Fetch Knowledge Sources
+        const ksRes = await fetch(`/api/devices/${deviceId}/ai-knowledge`);
+        if (ksRes.ok) setKnowledgeSources(await ksRes.json());
+
+        // Fetch Integrations
+        const intRes = await fetch(`/api/devices/${deviceId}/ai-integrations`);
+        if (intRes.ok) setIntegrations(await intRes.json());
+
+        // Fetch Orchestration
+        const orchRes = await fetch(`/api/devices/${deviceId}/ai-orchestration`);
+        if (orchRes.ok) {
+          const orchData = await orchRes.json();
+          if (orchData.nodes && orchData.nodes.length > 0) {
+            setNodes(orchData.nodes.map((n: any) => ({
+              id: n.id,
+              type: n.isEntryNode ? 'input' : 'default',
+              position: { x: n.positionX, y: n.positionY },
+              data: { label: n.name, prompt: n.prompt }
+            })));
+          }
+          if (orchData.edges && orchData.edges.length > 0) {
+            setEdges(orchData.edges.map((e: any) => ({
+              id: e.id,
+              source: e.sourceId,
+              target: e.targetId,
+              label: e.condition,
+              animated: true
+            })));
+          }
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -76,7 +113,106 @@ export default function AiConfigPage() {
       }
     };
     fetchData();
-  }, [deviceId]);
+  }, [deviceId, setNodes, setEdges]);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const text = await file.text();
+      const res = await fetch(`/api/devices/${deviceId}/ai-knowledge`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: file.name, type: "file", content: text }),
+      });
+      if (res.ok) {
+        const newSource = await res.json();
+        setKnowledgeSources([newSource, ...knowledgeSources]);
+      } else {
+        alert("Failed to upload knowledge source");
+      }
+    } catch (err) {
+      console.error("Upload error", err);
+      alert("Error reading file. Only text-based files are supported currently.");
+    } finally {
+      setUploading(false);
+      // Reset input
+      e.target.value = '';
+    }
+  };
+
+  const handleDeleteKnowledge = async (sourceId: string) => {
+    try {
+      const res = await fetch(`/api/devices/${deviceId}/ai-knowledge/${sourceId}`, { method: "DELETE" });
+      if (res.ok) {
+        setKnowledgeSources(knowledgeSources.filter(s => s.id !== sourceId));
+      }
+    } catch (err) {
+      console.error("Failed to delete", err);
+    }
+  };
+
+  const handleToggleIntegration = async (name: string, currentState: boolean) => {
+    setTogglingIntegration(name);
+    try {
+      const res = await fetch(`/api/devices/${deviceId}/ai-integrations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, isActive: !currentState }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setIntegrations(prev => {
+          const exists = prev.find(i => i.name === name);
+          if (exists) return prev.map(i => i.name === name ? updated : i);
+          return [...prev, updated];
+        });
+      }
+    } catch (err) {
+      console.error("Failed to toggle integration", err);
+    } finally {
+      setTogglingIntegration(null);
+    }
+  };
+
+  const handleSaveOrchestration = async () => {
+    setSaving(true);
+    try {
+      const payload = {
+        nodes: nodes.map(n => ({
+          id: n.id,
+          type: n.type,
+          position: n.position,
+          data: n.data
+        })),
+        edges: edges.map(e => ({
+          id: e.id,
+          source: e.source,
+          target: e.target,
+          label: e.label
+        }))
+      };
+      
+      const res = await fetch(`/api/devices/${deviceId}/ai-orchestration`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      
+      if (res.ok) {
+        alert("Orchestration flow saved successfully!");
+      } else {
+        alert("Failed to save orchestration flow");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("An error occurred while saving the orchestration flow");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -175,18 +311,53 @@ export default function AiConfigPage() {
                <p className="text-muted-foreground text-sm">Upload documents or add text for the AI to learn from.</p>
             </div>
             
-            <div className="border-2 border-dashed border-border rounded-xl p-8 text-center bg-secondary/20 hover:bg-secondary/40 transition-colors cursor-pointer">
+            <div className="border-2 border-dashed border-border rounded-xl p-8 text-center bg-secondary/20 hover:bg-secondary/40 transition-colors relative">
+              <input 
+                type="file" 
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+                accept=".txt" 
+                onChange={handleFileUpload}
+                disabled={uploading}
+              />
               <BookOpen className="w-10 h-10 mx-auto text-muted-foreground mb-4 opacity-50" />
               <p className="font-semibold text-foreground">Click to upload or drag and drop</p>
-              <p className="text-sm text-muted-foreground mt-1">PDF, TXT, or DOCX (Max 5MB)</p>
-              <Button variant="outline" className="mt-4">Browse Files</Button>
+              <p className="text-sm text-muted-foreground mt-1">Only .TXT supported for now (Max 5MB)</p>
+              <Button variant="outline" className="mt-4" disabled={uploading}>
+                {uploading ? "Uploading..." : "Browse Files"}
+              </Button>
             </div>
             
             <div className="space-y-4 mt-8">
               <h4 className="font-bold text-lg">Stored Knowledge</h4>
-              <div className="bg-card border border-border rounded-lg p-4 text-center text-sm text-muted-foreground">
-                No knowledge sources added yet.
-              </div>
+              {knowledgeSources.length === 0 ? (
+                <div className="bg-card border border-border rounded-lg p-4 text-center text-sm text-muted-foreground">
+                  No knowledge sources added yet.
+                </div>
+              ) : (
+                <div className="grid gap-3">
+                  {knowledgeSources.map((source) => (
+                    <div key={source.id} className="flex items-center justify-between p-4 border border-border bg-card rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-5 h-5 text-blue-500" />
+                        <div>
+                          <p className="font-semibold text-sm">{source.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(source.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => handleDeleteKnowledge(source.id)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         );
@@ -202,216 +373,51 @@ export default function AiConfigPage() {
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {/* Active Card */}
-                <div className="border border-green-400 bg-green-50/30 dark:bg-green-950/10 rounded-xl p-5 flex flex-col relative overflow-hidden">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg text-blue-600 dark:text-blue-300">
-                      <BellRing className="w-6 h-6" />
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-green-600">
-                      Active <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                    </div>
-                  </div>
-                  <h4 className="font-bold text-base mb-1">Send Personal Notification</h4>
-                  <p className="text-xs text-muted-foreground mb-6 flex-1">Send personal notifications to your phone number when a customer places an order or performs a specific activity</p>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" className="bg-white hover:bg-gray-50 flex-1 h-8 text-xs">Settings</Button>
-                    <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white flex-1 h-8 text-xs">Active</Button>
-                  </div>
-                </div>
+                {[
+                  { name: "Send Personal Notification", desc: "Send personal notifications to your phone number when a customer places an order or performs a specific activity", icon: BellRing, colorClass: "text-blue-600 dark:text-blue-300", bgClass: "bg-blue-100 dark:bg-blue-900" },
+                  { name: "File Generator", desc: "Generates files in formats such as .csv, .xlsx, etc., based on the provided prompt", icon: FileText, colorClass: "text-orange-600 dark:text-orange-300", bgClass: "bg-orange-100 dark:bg-orange-900" },
+                  { name: "Image Edit", desc: "Edit and create images based on prompts or images provided by users", icon: ImageIcon, colorClass: "text-blue-500 dark:text-blue-300", bgClass: "bg-blue-100 dark:bg-blue-900" },
+                  { name: "Web Search", desc: "Search the web for up-to-date information to answer customer questions with real-time data", icon: Globe, colorClass: "text-gray-700 dark:text-gray-300", bgClass: "bg-gray-100 dark:bg-gray-800" },
+                  { name: "CRM Integration", desc: "Connect AI with your CRM to retrieve data and create or update records in the CRM", icon: LayoutDashboard, colorClass: "text-blue-600 dark:text-blue-400", bgClass: "bg-blue-50 dark:bg-blue-900/30" },
+                  { name: "Orders", desc: "Connect AI with the Orders system so AI can create orders automatically", icon: ShoppingCart, colorClass: "text-purple-600 dark:text-purple-400", bgClass: "bg-purple-50 dark:bg-purple-900/30" },
+                  { name: "Check Shipping Cost", desc: "Check shipping rates from various couriers and get delivery status", icon: DollarSign, colorClass: "text-yellow-600 dark:text-yellow-400", bgClass: "bg-yellow-100 dark:bg-yellow-900/50" },
+                  { name: "Auto Reminder", desc: "Create reminders to perform specific tasks at a specific time", icon: Calendar, colorClass: "text-red-500 dark:text-red-400", bgClass: "bg-red-100 dark:bg-red-900/50" },
+                  { name: "Allow List (Whitelist numbers)", desc: "Create a list of phone numbers allowed to interact with this AI and block the rest", icon: ShieldCheck, colorClass: "text-orange-600 dark:text-orange-400", bgClass: "bg-orange-100 dark:bg-orange-900/50" },
+                  { name: "Google Sheets", desc: "Connect to Google Sheets to read and write data", icon: Table, colorClass: "text-green-600 dark:text-green-400", bgClass: "bg-green-100 dark:bg-green-900/50" },
+                  { name: "Nearest Location", desc: "Find the nearest location to the customer", icon: MapPin, colorClass: "text-red-500 dark:text-red-400", bgClass: "bg-red-100 dark:bg-red-900/50" },
+                  { name: "Netzme", desc: "Transaction payments via QRIS", icon: Zap, colorClass: "text-white", bgClass: "bg-blue-500" }
+                ].map((app, idx) => {
+                  const isActive = integrations.find(i => i.name === app.name)?.isActive || false;
+                  const Icon = app.icon;
+                  const isToggling = togglingIntegration === app.name;
 
-                {/* Inactive Cards */}
-                <div className="border border-border bg-card rounded-xl p-5 flex flex-col">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg text-orange-600 dark:text-orange-300">
-                      <FileText className="w-6 h-6" />
+                  return (
+                    <div key={idx} className={`border rounded-xl p-5 flex flex-col relative overflow-hidden ${isActive ? 'border-green-400 bg-green-50/30 dark:bg-green-950/10' : 'border-border bg-card'}`}>
+                      <div className="flex justify-between items-start mb-4 relative z-10">
+                        <div className={`p-2 rounded-lg ${app.bgClass} ${app.colorClass}`}>
+                          <Icon className="w-6 h-6" />
+                        </div>
+                        <div className={`flex items-center gap-1.5 text-xs ${isActive ? 'font-semibold text-green-600' : 'text-muted-foreground'}`}>
+                          {isActive ? 'Active' : 'Inactive'} <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-green-500' : 'bg-gray-300'}`}></span>
+                        </div>
+                      </div>
+                      <h4 className="font-bold text-base mb-1 relative z-10">{app.name}</h4>
+                      <p className="text-xs text-muted-foreground mb-6 flex-1 relative z-10">{app.desc}</p>
+                      <div className="flex items-center gap-2 relative z-10">
+                        <Button variant="outline" size="sm" className={`flex-1 h-8 text-xs ${isActive ? 'bg-white hover:bg-gray-50' : ''}`}>Settings</Button>
+                        <Button 
+                          variant={isActive ? "default" : "outline"} 
+                          size="sm" 
+                          className={`flex-1 h-8 text-xs ${isActive ? 'bg-green-500 hover:bg-green-600 text-white' : ''}`}
+                          onClick={() => handleToggleIntegration(app.name, isActive)}
+                          disabled={isToggling}
+                        >
+                          {isToggling ? 'Wait...' : (isActive ? 'Active' : 'Activate')}
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      Inactive <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-                    </div>
-                  </div>
-                  <h4 className="font-bold text-base mb-1">File Generator</h4>
-                  <p className="text-xs text-muted-foreground mb-6 flex-1">Generates files in formats such as .csv, .xlsx, etc., based on the provided prompt</p>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Settings</Button>
-                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Activate</Button>
-                  </div>
-                </div>
-
-                <div className="border border-border bg-card rounded-xl p-5 flex flex-col relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-400/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
-                  <div className="flex justify-between items-start mb-4 relative z-10">
-                    <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg text-blue-500 dark:text-blue-300">
-                      <ImageIcon className="w-6 h-6" />
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      Inactive <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-                    </div>
-                  </div>
-                  <h4 className="font-bold text-base mb-1 relative z-10">Image Edit</h4>
-                  <p className="text-xs text-muted-foreground mb-6 flex-1 relative z-10">Edit and create images based on prompts or images provided by users</p>
-                  <div className="flex items-center gap-2 relative z-10">
-                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Settings</Button>
-                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Activate</Button>
-                  </div>
-                </div>
-
-                <div className="border border-border bg-card rounded-xl p-5 flex flex-col">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-700 dark:text-gray-300">
-                      <Globe className="w-6 h-6" />
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      Inactive <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-                    </div>
-                  </div>
-                  <h4 className="font-bold text-base mb-1">Web Search</h4>
-                  <p className="text-xs text-muted-foreground mb-6 flex-1">Search the web for up-to-date information to answer customer questions with real-time data</p>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Settings</Button>
-                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Activate</Button>
-                  </div>
-                </div>
-
-                <div className="border border-border bg-card rounded-xl p-5 flex flex-col">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
-                      <LayoutDashboard className="w-6 h-6" />
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      Inactive <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-                    </div>
-                  </div>
-                  <h4 className="font-bold text-base mb-1">CRM Integration</h4>
-                  <p className="text-xs text-muted-foreground mb-6 flex-1">Connect AI with your CRM to retrieve data and create or update records in the CRM</p>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Settings</Button>
-                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Activate</Button>
-                  </div>
-                </div>
-
-                <div className="border border-border bg-card rounded-xl p-5 flex flex-col">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="p-2 bg-purple-50 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400">
-                      <ShoppingCart className="w-6 h-6" />
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      Inactive <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-                    </div>
-                  </div>
-                  <h4 className="font-bold text-base mb-1">Orders</h4>
-                  <p className="text-xs text-muted-foreground mb-6 flex-1">Connect AI with the Orders system so AI can create orders automatically</p>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Settings</Button>
-                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Activate</Button>
-                  </div>
-                </div>
-
-                <div className="border border-border bg-card rounded-xl p-5 flex flex-col relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-400/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
-                  <div className="flex justify-between items-start mb-4 relative z-10">
-                    <div className="p-2 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg text-yellow-600 dark:text-yellow-400">
-                      <DollarSign className="w-6 h-6" />
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      Inactive <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-                    </div>
-                  </div>
-                  <h4 className="font-bold text-base mb-1 relative z-10">Check Shipping Cost</h4>
-                  <p className="text-xs text-muted-foreground mb-6 flex-1 relative z-10">Check shipping rates from various couriers and get delivery status</p>
-                  <div className="flex items-center gap-2 relative z-10">
-                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Settings</Button>
-                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Activate</Button>
-                  </div>
-                </div>
-
-                <div className="border border-border bg-card rounded-xl p-5 flex flex-col relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-red-400/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
-                  <div className="flex justify-between items-start mb-4 relative z-10">
-                    <div className="p-2 bg-red-100 dark:bg-red-900/50 rounded-lg text-red-500 dark:text-red-400">
-                      <Calendar className="w-6 h-6" />
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      Inactive <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-                    </div>
-                  </div>
-                  <h4 className="font-bold text-base mb-1 relative z-10">Auto Reminder</h4>
-                  <p className="text-xs text-muted-foreground mb-6 flex-1 relative z-10">Create reminders to perform specific tasks at a specific time</p>
-                  <div className="flex items-center gap-2 relative z-10">
-                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Settings</Button>
-                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Activate</Button>
-                  </div>
-                </div>
-
-                <div className="border border-border bg-card rounded-xl p-5 flex flex-col relative overflow-hidden">
-                  <div className="flex justify-between items-start mb-4 relative z-10">
-                    <div className="p-2 bg-orange-100 dark:bg-orange-900/50 rounded-lg text-orange-600 dark:text-orange-400">
-                      <ShieldCheck className="w-6 h-6" />
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      Inactive <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-                    </div>
-                  </div>
-                  <h4 className="font-bold text-base mb-1 relative z-10">Allow List (Whitelist numbers)</h4>
-                  <p className="text-xs text-muted-foreground mb-6 flex-1 relative z-10">Create a list of phone numbers allowed to interact with this AI and block the rest</p>
-                  <div className="flex items-center gap-2 relative z-10">
-                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Settings</Button>
-                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Activate</Button>
-                  </div>
-                </div>
-
-                <div className="border border-border bg-card rounded-xl p-5 flex flex-col relative overflow-hidden">
-                  <div className="flex justify-between items-start mb-4 relative z-10">
-                    <div className="p-2 bg-green-100 dark:bg-green-900/50 rounded-lg text-green-600 dark:text-green-400">
-                      <Table className="w-6 h-6" />
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      Inactive <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-                    </div>
-                  </div>
-                  <h4 className="font-bold text-base mb-1 relative z-10">Google Sheets</h4>
-                  <p className="text-xs text-muted-foreground mb-6 flex-1 relative z-10">Connect to Google Sheets to read and write data</p>
-                  <div className="flex items-center gap-2 relative z-10">
-                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Settings</Button>
-                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Activate</Button>
-                  </div>
-                </div>
-
-                <div className="border border-border bg-card rounded-xl p-5 flex flex-col relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-200/20 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
-                  <div className="flex justify-between items-start mb-4 relative z-10">
-                    <div className="p-2 bg-red-100 dark:bg-red-900/50 rounded-lg text-red-500 dark:text-red-400">
-                      <MapPin className="w-6 h-6" />
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      Inactive <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-                    </div>
-                  </div>
-                  <h4 className="font-bold text-base mb-1 relative z-10">Nearest Location</h4>
-                  <p className="text-xs text-muted-foreground mb-6 flex-1 relative z-10">Find the nearest location to the customer</p>
-                  <div className="flex items-center gap-2 relative z-10">
-                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Settings</Button>
-                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Activate</Button>
-                  </div>
-                </div>
-
-                <div className="border border-border bg-card rounded-xl p-5 flex flex-col relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
-                  <div className="flex justify-between items-start mb-4 relative z-10">
-                    <div className="p-2 bg-blue-500 rounded-lg text-white">
-                      <Zap className="w-6 h-6" />
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      Inactive <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-                    </div>
-                  </div>
-                  <h4 className="font-bold text-base mb-1 relative z-10">Netzme</h4>
-                  <p className="text-xs text-muted-foreground mb-6 flex-1 relative z-10">Transaction payments via QRIS</p>
-                  <div className="flex items-center gap-2 relative z-10">
-                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Settings</Button>
-                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Activate</Button>
-                  </div>
-                </div>
+                  );
+                })}
               </div>
             </section>
 
@@ -427,61 +433,39 @@ export default function AiConfigPage() {
               <p className="text-muted-foreground text-sm mb-6">Enable AI tools to enhance your chatbot's capabilities with additional functionalities.</p>
               
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                <div className="border border-green-400 bg-green-50/30 dark:bg-green-950/10 rounded-xl p-5 flex flex-col relative overflow-hidden">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-green-600">
-                      Active <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                    </div>
-                  </div>
-                  <h4 className="font-bold text-base mb-2">nearest_store_locator</h4>
-                  <p className="text-xs text-muted-foreground mb-6 flex-1">Use this if user is asking about nearest store. This tool uses customer's address to find the nearest outlet.</p>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" className="bg-white hover:bg-gray-50 flex-1 h-8 text-xs">Settings</Button>
-                    <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white flex-1 h-8 text-xs">Active</Button>
-                  </div>
-                </div>
+                {[
+                  { name: "nearest_store_locator", desc: "Use this if user is asking about nearest store. This tool uses customer's address to find the nearest outlet." },
+                  { name: "Product_Catalog", desc: "Find the available products based on product search query given by the customer." },
+                  { name: "Leads Customer", desc: "WAJIB Gunakan untuk mendata customer, panggil tools ketika : 1. Leads / chat pertama dari customer muncul, get data seperti Nama / Display name dan Nomer Telepon" },
+                  { name: "Store_Database", desc: "Find the store based on store name search query given by the customer." }
+                ].map((tool, idx) => {
+                  const isActive = integrations.find(i => i.name === tool.name)?.isActive || false;
+                  const isToggling = togglingIntegration === tool.name;
 
-                <div className="border border-green-400 bg-green-50/30 dark:bg-green-950/10 rounded-xl p-5 flex flex-col relative overflow-hidden">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-green-600">
-                      Active <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                  return (
+                    <div key={idx} className={`border rounded-xl p-5 flex flex-col relative overflow-hidden ${isActive ? 'border-green-400 bg-green-50/30 dark:bg-green-950/10' : 'border-border bg-card'}`}>
+                      <div className="flex justify-between items-start mb-2">
+                        <div className={`flex items-center gap-1.5 text-xs ${isActive ? 'font-semibold text-green-600' : 'text-muted-foreground'}`}>
+                          {isActive ? 'Active' : 'Inactive'} <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-green-500' : 'bg-gray-300'}`}></span>
+                        </div>
+                      </div>
+                      <h4 className="font-bold text-base mb-2">{tool.name}</h4>
+                      <p className="text-xs text-muted-foreground mb-6 flex-1">{tool.desc}</p>
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" className={`flex-1 h-8 text-xs ${isActive ? 'bg-white hover:bg-gray-50' : ''}`}>Settings</Button>
+                        <Button 
+                          variant={isActive ? "default" : "outline"} 
+                          size="sm" 
+                          className={`flex-1 h-8 text-xs ${isActive ? 'bg-green-500 hover:bg-green-600 text-white' : ''}`}
+                          onClick={() => handleToggleIntegration(tool.name, isActive)}
+                          disabled={isToggling}
+                        >
+                          {isToggling ? 'Wait...' : (isActive ? 'Active' : 'Activate')}
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                  <h4 className="font-bold text-base mb-2">Product_Catalog</h4>
-                  <p className="text-xs text-muted-foreground mb-6 flex-1">Find the available products based on product search query given by the customer.</p>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" className="bg-white hover:bg-gray-50 flex-1 h-8 text-xs">Settings</Button>
-                    <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white flex-1 h-8 text-xs">Active</Button>
-                  </div>
-                </div>
-
-                <div className="border border-green-400 bg-green-50/30 dark:bg-green-950/10 rounded-xl p-5 flex flex-col relative overflow-hidden">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-green-600">
-                      Active <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                    </div>
-                  </div>
-                  <h4 className="font-bold text-base mb-2">Leads Customer</h4>
-                  <p className="text-xs text-muted-foreground mb-6 flex-1">WAJIB Gunakan untuk mendata customer, panggil tools ketika : 1. Leads / chat pertama dari customer muncul, get data seperti Nama / Display name dan Nomer Telepon</p>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" className="bg-white hover:bg-gray-50 flex-1 h-8 text-xs">Settings</Button>
-                    <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white flex-1 h-8 text-xs">Active</Button>
-                  </div>
-                </div>
-
-                <div className="border border-border bg-card rounded-xl p-5 flex flex-col">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      Inactive <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-                    </div>
-                  </div>
-                  <h4 className="font-bold text-base mb-2">Store_Database</h4>
-                  <p className="text-xs text-muted-foreground mb-6 flex-1">Find the store based on store name search query given by the customer.</p>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Settings</Button>
-                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Activate</Button>
-                  </div>
-                </div>
+                  );
+                })}
 
                 <div className="border-2 border-dashed border-border bg-secondary/20 hover:bg-secondary/40 transition-colors rounded-xl p-5 flex flex-col items-center justify-center min-h-[160px] cursor-pointer text-muted-foreground hover:text-foreground">
                   <Plus className="w-8 h-8 mb-2" />
@@ -583,10 +567,14 @@ export default function AiConfigPage() {
                 <Background />
                 <Controls />
               </ReactFlow>
-              <div className="absolute top-4 right-4 z-10">
-                <Button size="sm" className="shadow-md">
+              <div className="absolute top-4 right-4 z-10 flex gap-2">
+                <Button size="sm" variant="secondary" className="shadow-md">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Agent Node
+                </Button>
+                <Button size="sm" className="shadow-md bg-blue-600 hover:bg-blue-700 text-white" onClick={handleSaveOrchestration} disabled={saving}>
+                  {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                  Save Flow
                 </Button>
               </div>
             </div>
