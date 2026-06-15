@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { GoogleGenerativeAI } from "@google/generative-ai"
-
+import OpenAI from "openai"
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -60,26 +60,46 @@ export async function POST(
 
     const systemPrompt = (aiConfig.prompt || "You are a helpful WhatsApp assistant.") + knowledgeContext;
 
-    // Initialize Gemini
-    const genAI = new GoogleGenerativeAI(aiConfig.apiKey);
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-      systemInstruction: systemPrompt
-    });
+    let responseText = "";
 
-    // Start Chat with history
-    // Convert our history format to Gemini's format
-    const formattedHistory = (history || []).map((msg: any) => ({
-      role: msg.role === "assistant" ? "model" : "user",
-      parts: [{ text: msg.text }]
-    }));
+    if (aiConfig.provider === "openai") {
+      const openai = new OpenAI({ apiKey: aiConfig.apiKey });
+      
+      const formattedHistory = (history || []).map((msg: any) => ({
+        role: msg.role === "model" ? "assistant" : "user",
+        content: msg.text
+      }));
 
-    const chat = model.startChat({
-      history: formattedHistory,
-    });
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini", // Use gpt-4o-mini as a default fast/cheap model
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...formattedHistory,
+          { role: "user", content: message }
+        ]
+      });
 
-    const result = await chat.sendMessage(message);
-    const responseText = result.response.text();
+      responseText = completion.choices[0]?.message?.content || "";
+    } else {
+      // Default to Gemini
+      const genAI = new GoogleGenerativeAI(aiConfig.apiKey);
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-1.5-flash",
+        systemInstruction: systemPrompt
+      });
+
+      const formattedHistory = (history || []).map((msg: any) => ({
+        role: msg.role === "assistant" ? "model" : "user",
+        parts: [{ text: msg.text }]
+      }));
+
+      const chat = model.startChat({
+        history: formattedHistory,
+      });
+
+      const result = await chat.sendMessage(message);
+      responseText = result.response.text();
+    }
 
     return NextResponse.json({ reply: responseText })
   } catch (error: any) {
