@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Loader2, ArrowLeft, Bot, Save, Settings, BookOpen, Link2, Clock, ListChecks, Network, User as UserIcon, RefreshCw, Plus } from "lucide-react";
+import { Loader2, ArrowLeft, Bot, Save, Settings, BookOpen, Link2, Clock, ListChecks, Network, User as UserIcon, RefreshCw, Plus, BellRing, FileText, Image as ImageIcon, Globe, LayoutDashboard, ShoppingCart, DollarSign, Calendar, ShieldCheck, Table, MapPin, BadgeCheck, Zap } from "lucide-react";
 import { ReactFlow, Background, Controls, Node, Edge, addEdge, useNodesState, useEdgesState } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -193,33 +193,333 @@ export default function AiConfigPage() {
 
       case "Integrations":
         return (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="text-center space-y-1 mb-8">
-               <h3 className="text-2xl font-bold">API Integrations</h3>
-               <p className="text-muted-foreground text-sm">Connect third-party services via API Keys or Webhooks.</p>
-            </div>
-            
-            <div className="grid gap-4 p-4 border border-border rounded-lg bg-card">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-bold">Make.com Webhook</h4>
-                  <p className="text-xs text-muted-foreground">Trigger a Make.com scenario.</p>
-                </div>
-                <Switch />
+          <div className="space-y-12 animate-in fade-in duration-300">
+            {/* Connected Apps Section */}
+            <section>
+              <div className="mb-6">
+                 <h3 className="text-xl font-bold">Connected Apps</h3>
+                 <p className="text-muted-foreground text-sm">Connect your chatbot with third-party applications to extend its functionality.</p>
               </div>
-              <Input placeholder="https://hook.make.com/..." />
-            </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {/* Active Card */}
+                <div className="border border-green-400 bg-green-50/30 dark:bg-green-950/10 rounded-xl p-5 flex flex-col relative overflow-hidden">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg text-blue-600 dark:text-blue-300">
+                      <BellRing className="w-6 h-6" />
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-green-600">
+                      Active <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                    </div>
+                  </div>
+                  <h4 className="font-bold text-base mb-1">Send Personal Notification</h4>
+                  <p className="text-xs text-muted-foreground mb-6 flex-1">Send personal notifications to your phone number when a customer places an order or performs a specific activity</p>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" className="bg-white hover:bg-gray-50 flex-1 h-8 text-xs">Settings</Button>
+                    <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white flex-1 h-8 text-xs">Active</Button>
+                  </div>
+                </div>
 
-            <div className="grid gap-4 p-4 border border-border rounded-lg bg-card">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-bold">Zapier Webhook</h4>
-                  <p className="text-xs text-muted-foreground">Trigger a Zapier workflow.</p>
+                {/* Inactive Cards */}
+                <div className="border border-border bg-card rounded-xl p-5 flex flex-col">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg text-orange-600 dark:text-orange-300">
+                      <FileText className="w-6 h-6" />
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      Inactive <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                    </div>
+                  </div>
+                  <h4 className="font-bold text-base mb-1">File Generator</h4>
+                  <p className="text-xs text-muted-foreground mb-6 flex-1">Generates files in formats such as .csv, .xlsx, etc., based on the provided prompt</p>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Settings</Button>
+                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Activate</Button>
+                  </div>
                 </div>
-                <Switch />
+
+                <div className="border border-border bg-card rounded-xl p-5 flex flex-col relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-400/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+                  <div className="flex justify-between items-start mb-4 relative z-10">
+                    <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg text-blue-500 dark:text-blue-300">
+                      <ImageIcon className="w-6 h-6" />
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      Inactive <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                    </div>
+                  </div>
+                  <h4 className="font-bold text-base mb-1 relative z-10">Image Edit</h4>
+                  <p className="text-xs text-muted-foreground mb-6 flex-1 relative z-10">Edit and create images based on prompts or images provided by users</p>
+                  <div className="flex items-center gap-2 relative z-10">
+                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Settings</Button>
+                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Activate</Button>
+                  </div>
+                </div>
+
+                <div className="border border-border bg-card rounded-xl p-5 flex flex-col">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-700 dark:text-gray-300">
+                      <Globe className="w-6 h-6" />
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      Inactive <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                    </div>
+                  </div>
+                  <h4 className="font-bold text-base mb-1">Web Search</h4>
+                  <p className="text-xs text-muted-foreground mb-6 flex-1">Search the web for up-to-date information to answer customer questions with real-time data</p>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Settings</Button>
+                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Activate</Button>
+                  </div>
+                </div>
+
+                <div className="border border-border bg-card rounded-xl p-5 flex flex-col">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
+                      <LayoutDashboard className="w-6 h-6" />
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      Inactive <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                    </div>
+                  </div>
+                  <h4 className="font-bold text-base mb-1">CRM Integration</h4>
+                  <p className="text-xs text-muted-foreground mb-6 flex-1">Connect AI with your CRM to retrieve data and create or update records in the CRM</p>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Settings</Button>
+                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Activate</Button>
+                  </div>
+                </div>
+
+                <div className="border border-border bg-card rounded-xl p-5 flex flex-col">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="p-2 bg-purple-50 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400">
+                      <ShoppingCart className="w-6 h-6" />
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      Inactive <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                    </div>
+                  </div>
+                  <h4 className="font-bold text-base mb-1">Orders</h4>
+                  <p className="text-xs text-muted-foreground mb-6 flex-1">Connect AI with the Orders system so AI can create orders automatically</p>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Settings</Button>
+                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Activate</Button>
+                  </div>
+                </div>
+
+                <div className="border border-border bg-card rounded-xl p-5 flex flex-col relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-400/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+                  <div className="flex justify-between items-start mb-4 relative z-10">
+                    <div className="p-2 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg text-yellow-600 dark:text-yellow-400">
+                      <DollarSign className="w-6 h-6" />
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      Inactive <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                    </div>
+                  </div>
+                  <h4 className="font-bold text-base mb-1 relative z-10">Check Shipping Cost</h4>
+                  <p className="text-xs text-muted-foreground mb-6 flex-1 relative z-10">Check shipping rates from various couriers and get delivery status</p>
+                  <div className="flex items-center gap-2 relative z-10">
+                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Settings</Button>
+                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Activate</Button>
+                  </div>
+                </div>
+
+                <div className="border border-border bg-card rounded-xl p-5 flex flex-col relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-red-400/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+                  <div className="flex justify-between items-start mb-4 relative z-10">
+                    <div className="p-2 bg-red-100 dark:bg-red-900/50 rounded-lg text-red-500 dark:text-red-400">
+                      <Calendar className="w-6 h-6" />
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      Inactive <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                    </div>
+                  </div>
+                  <h4 className="font-bold text-base mb-1 relative z-10">Auto Reminder</h4>
+                  <p className="text-xs text-muted-foreground mb-6 flex-1 relative z-10">Create reminders to perform specific tasks at a specific time</p>
+                  <div className="flex items-center gap-2 relative z-10">
+                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Settings</Button>
+                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Activate</Button>
+                  </div>
+                </div>
+
+                <div className="border border-border bg-card rounded-xl p-5 flex flex-col relative overflow-hidden">
+                  <div className="flex justify-between items-start mb-4 relative z-10">
+                    <div className="p-2 bg-orange-100 dark:bg-orange-900/50 rounded-lg text-orange-600 dark:text-orange-400">
+                      <ShieldCheck className="w-6 h-6" />
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      Inactive <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                    </div>
+                  </div>
+                  <h4 className="font-bold text-base mb-1 relative z-10">Allow List (Whitelist numbers)</h4>
+                  <p className="text-xs text-muted-foreground mb-6 flex-1 relative z-10">Create a list of phone numbers allowed to interact with this AI and block the rest</p>
+                  <div className="flex items-center gap-2 relative z-10">
+                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Settings</Button>
+                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Activate</Button>
+                  </div>
+                </div>
+
+                <div className="border border-border bg-card rounded-xl p-5 flex flex-col relative overflow-hidden">
+                  <div className="flex justify-between items-start mb-4 relative z-10">
+                    <div className="p-2 bg-green-100 dark:bg-green-900/50 rounded-lg text-green-600 dark:text-green-400">
+                      <Table className="w-6 h-6" />
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      Inactive <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                    </div>
+                  </div>
+                  <h4 className="font-bold text-base mb-1 relative z-10">Google Sheets</h4>
+                  <p className="text-xs text-muted-foreground mb-6 flex-1 relative z-10">Connect to Google Sheets to read and write data</p>
+                  <div className="flex items-center gap-2 relative z-10">
+                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Settings</Button>
+                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Activate</Button>
+                  </div>
+                </div>
+
+                <div className="border border-border bg-card rounded-xl p-5 flex flex-col relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-200/20 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+                  <div className="flex justify-between items-start mb-4 relative z-10">
+                    <div className="p-2 bg-red-100 dark:bg-red-900/50 rounded-lg text-red-500 dark:text-red-400">
+                      <MapPin className="w-6 h-6" />
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      Inactive <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                    </div>
+                  </div>
+                  <h4 className="font-bold text-base mb-1 relative z-10">Nearest Location</h4>
+                  <p className="text-xs text-muted-foreground mb-6 flex-1 relative z-10">Find the nearest location to the customer</p>
+                  <div className="flex items-center gap-2 relative z-10">
+                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Settings</Button>
+                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Activate</Button>
+                  </div>
+                </div>
+
+                <div className="border border-border bg-card rounded-xl p-5 flex flex-col relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+                  <div className="flex justify-between items-start mb-4 relative z-10">
+                    <div className="p-2 bg-blue-500 rounded-lg text-white">
+                      <Zap className="w-6 h-6" />
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      Inactive <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                    </div>
+                  </div>
+                  <h4 className="font-bold text-base mb-1 relative z-10">Netzme</h4>
+                  <p className="text-xs text-muted-foreground mb-6 flex-1 relative z-10">Transaction payments via QRIS</p>
+                  <div className="flex items-center gap-2 relative z-10">
+                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Settings</Button>
+                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Activate</Button>
+                  </div>
+                </div>
               </div>
-              <Input placeholder="https://hooks.zapier.com/..." />
-            </div>
+            </section>
+
+            {/* AI Tools Section */}
+            <section>
+              <div className="mb-6 flex items-center gap-4">
+                 <h3 className="text-xl font-bold">AI Tools</h3>
+                 <Button variant="outline" size="sm" className="h-8 text-xs rounded-full">
+                    <Settings className="w-3.5 h-3.5 mr-2" />
+                    Open AI Tools Settings
+                 </Button>
+              </div>
+              <p className="text-muted-foreground text-sm mb-6">Enable AI tools to enhance your chatbot's capabilities with additional functionalities.</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="border border-green-400 bg-green-50/30 dark:bg-green-950/10 rounded-xl p-5 flex flex-col relative overflow-hidden">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-green-600">
+                      Active <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                    </div>
+                  </div>
+                  <h4 className="font-bold text-base mb-2">nearest_dealer_yamaha_yogya</h4>
+                  <p className="text-xs text-muted-foreground mb-6 flex-1">Use this if user is asking about nearest Yamaha dealer. This tool uses customer's address to find the nearest dealer</p>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" className="bg-white hover:bg-gray-50 flex-1 h-8 text-xs">Settings</Button>
+                    <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white flex-1 h-8 text-xs">Active</Button>
+                  </div>
+                </div>
+
+                <div className="border border-green-400 bg-green-50/30 dark:bg-green-950/10 rounded-xl p-5 flex flex-col relative overflow-hidden">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-green-600">
+                      Active <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                    </div>
+                  </div>
+                  <h4 className="font-bold text-base mb-2">Katalog_YAMAHA</h4>
+                  <p className="text-xs text-muted-foreground mb-6 flex-1">Find the available products based on product search query given by the customer.</p>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" className="bg-white hover:bg-gray-50 flex-1 h-8 text-xs">Settings</Button>
+                    <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white flex-1 h-8 text-xs">Active</Button>
+                  </div>
+                </div>
+
+                <div className="border border-green-400 bg-green-50/30 dark:bg-green-950/10 rounded-xl p-5 flex flex-col relative overflow-hidden">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-green-600">
+                      Active <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                    </div>
+                  </div>
+                  <h4 className="font-bold text-base mb-2">Leads Customer</h4>
+                  <p className="text-xs text-muted-foreground mb-6 flex-1">WAJIB Gunakan untuk mendata customer, panggil tools ketika : 1. Leads / chat pertama dari customer muncul, get data seperti Nama / Display name dan Nomer Telepon 2. Gunakan ketika ada Label chat yang digunakan</p>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" className="bg-white hover:bg-gray-50 flex-1 h-8 text-xs">Settings</Button>
+                    <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white flex-1 h-8 text-xs">Active</Button>
+                  </div>
+                </div>
+
+                <div className="border border-border bg-card rounded-xl p-5 flex flex-col">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      Inactive <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                    </div>
+                  </div>
+                  <h4 className="font-bold text-base mb-2">Dealer_Yamaha_Yogya</h4>
+                  <p className="text-xs text-muted-foreground mb-6 flex-1">Find the dealer based on dealer name search query given by the customer.</p>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Settings</Button>
+                    <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Activate</Button>
+                  </div>
+                </div>
+
+                <div className="border-2 border-dashed border-border bg-secondary/20 hover:bg-secondary/40 transition-colors rounded-xl p-5 flex flex-col items-center justify-center min-h-[160px] cursor-pointer text-muted-foreground hover:text-foreground">
+                  <Plus className="w-8 h-8 mb-2" />
+                  <span className="font-bold">Create AI Tool</span>
+                </div>
+              </div>
+            </section>
+
+            {/* Register Third Party Apps Section */}
+            <section>
+              <div className="mb-6">
+                 <h3 className="text-xl font-bold">Register Third Party Apps</h3>
+                 <p className="text-muted-foreground text-sm">Register your third party apps to enhance your chatbot's capabilities.</p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="border border-border bg-card rounded-xl p-5 flex flex-col relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+                  <div className="flex justify-between items-start mb-4 relative z-10">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-500 rounded-lg text-white">
+                        <Zap className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-base">Netzme</h4>
+                        <p className="text-xs text-muted-foreground">Transaction payments via QRIS</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                    </div>
+                  </div>
+                  <div className="mt-4 relative z-10">
+                    <Button variant="outline" size="sm" className="h-8 text-xs w-24">Register</Button>
+                  </div>
+                </div>
+              </div>
+            </section>
           </div>
         );
 
