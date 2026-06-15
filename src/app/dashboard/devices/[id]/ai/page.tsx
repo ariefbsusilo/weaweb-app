@@ -433,8 +433,8 @@ export default function AiConfigPage() {
                       Active <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
                     </div>
                   </div>
-                  <h4 className="font-bold text-base mb-2">nearest_dealer_yamaha_yogya</h4>
-                  <p className="text-xs text-muted-foreground mb-6 flex-1">Use this if user is asking about nearest Yamaha dealer. This tool uses customer's address to find the nearest dealer</p>
+                  <h4 className="font-bold text-base mb-2">nearest_store_locator</h4>
+                  <p className="text-xs text-muted-foreground mb-6 flex-1">Use this if user is asking about nearest store. This tool uses customer's address to find the nearest outlet.</p>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" className="bg-white hover:bg-gray-50 flex-1 h-8 text-xs">Settings</Button>
                     <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white flex-1 h-8 text-xs">Active</Button>
@@ -447,7 +447,7 @@ export default function AiConfigPage() {
                       Active <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
                     </div>
                   </div>
-                  <h4 className="font-bold text-base mb-2">Katalog_YAMAHA</h4>
+                  <h4 className="font-bold text-base mb-2">Product_Catalog</h4>
                   <p className="text-xs text-muted-foreground mb-6 flex-1">Find the available products based on product search query given by the customer.</p>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" className="bg-white hover:bg-gray-50 flex-1 h-8 text-xs">Settings</Button>
@@ -462,7 +462,7 @@ export default function AiConfigPage() {
                     </div>
                   </div>
                   <h4 className="font-bold text-base mb-2">Leads Customer</h4>
-                  <p className="text-xs text-muted-foreground mb-6 flex-1">WAJIB Gunakan untuk mendata customer, panggil tools ketika : 1. Leads / chat pertama dari customer muncul, get data seperti Nama / Display name dan Nomer Telepon 2. Gunakan ketika ada Label chat yang digunakan</p>
+                  <p className="text-xs text-muted-foreground mb-6 flex-1">WAJIB Gunakan untuk mendata customer, panggil tools ketika : 1. Leads / chat pertama dari customer muncul, get data seperti Nama / Display name dan Nomer Telepon</p>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" className="bg-white hover:bg-gray-50 flex-1 h-8 text-xs">Settings</Button>
                     <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white flex-1 h-8 text-xs">Active</Button>
@@ -475,8 +475,8 @@ export default function AiConfigPage() {
                       Inactive <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
                     </div>
                   </div>
-                  <h4 className="font-bold text-base mb-2">Dealer_Yamaha_Yogya</h4>
-                  <p className="text-xs text-muted-foreground mb-6 flex-1">Find the dealer based on dealer name search query given by the customer.</p>
+                  <h4 className="font-bold text-base mb-2">Store_Database</h4>
+                  <p className="text-xs text-muted-foreground mb-6 flex-1">Find the store based on store name search query given by the customer.</p>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Settings</Button>
                     <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">Activate</Button>
