@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Send, Check, CheckCheck, Trash2, MessageSquarePlus, Paperclip, X, Loader2, User, ChevronDown, Clock, Bot, AlertCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 
 export default function InboxPage() {
   const [conversations, setConversations] = useState<any[]>([]);
@@ -24,6 +25,26 @@ export default function InboxPage() {
   const [devices, setDevices] = useState<any[]>([]);
   const [evaluating, setEvaluating] = useState(false);
   const [evaluatingMessageId, setEvaluatingMessageId] = useState<string | null>(null);
+  const [togglingAi, setTogglingAi] = useState(false);
+
+  const toggleAiEnabled = async (checked: boolean) => {
+    if (!activeContactId) return;
+    setTogglingAi(true);
+    try {
+      const res = await fetch(`/api/v1/contacts/${activeContactId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ aiEnabled: checked })
+      });
+      if (res.ok) {
+        setConversations(prev => prev.map(c => c.id === activeContactId ? { ...c, aiEnabled: checked } : c));
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setTogglingAi(false);
+    }
+  };
 
   useEffect(() => {
     fetchConversations();
@@ -272,6 +293,16 @@ export default function InboxPage() {
                   <h3 className="font-extrabold text-foreground text-base tracking-tight">{activeConversation.name && activeConversation.name !== "Unknown" ? activeConversation.name : `+${activeConversation.phoneNumber.replace('@lid', '')}`}</h3>
                   <p className="text-[11px] font-mono text-muted-foreground">{activeConversation.phoneNumber}</p>
                 </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-muted-foreground flex items-center gap-1">
+                  <Bot className="w-3 h-3" /> AI Chat
+                </span>
+                <Switch 
+                  checked={activeConversation.aiEnabled ?? true} 
+                  onCheckedChange={toggleAiEnabled} 
+                  disabled={togglingAi}
+                />
               </div>
             </div>
             

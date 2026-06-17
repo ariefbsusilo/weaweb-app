@@ -273,7 +273,7 @@ export async function initWhatsApp(deviceId: string, tenantId: string, forceRecr
       if (!matchedRule && incomingText.trim() !== "") {
         try {
           const aiConfig = await prisma.aiConfig.findUnique({ where: { deviceId } });
-          if (aiConfig && aiConfig.isActive && aiConfig.apiKey) {
+          if (aiConfig && aiConfig.isActive && aiConfig.apiKey && contact?.aiEnabled !== false) {
             const aiKnowledgeSources = await prisma.aiKnowledgeSource.findMany({ where: { deviceId } });
             
             let systemPrompt = aiConfig.prompt || "You are a helpful WhatsApp assistant.";

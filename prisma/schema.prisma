@@ -82,6 +82,7 @@ model Contact {
   name        String?
   tags        String?   // Comma separated for MVP
   customFields String?  // JSON string for dynamic fields
+  aiEnabled   Boolean   @default(true) // Switch to disable AI chat for this specific contact
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
