@@ -294,14 +294,21 @@ export default function InboxPage() {
                   <p className="text-[11px] font-mono text-muted-foreground">{activeConversation.phoneNumber}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-muted-foreground flex items-center gap-1">
-                  <Bot className="w-3 h-3" /> AI Chat
-                </span>
+              <div className={`flex items-center gap-3 px-3 py-1.5 rounded-full border transition-all ${activeConversation.aiEnabled ?? true ? 'bg-emerald-500/10 border-emerald-500/20 shadow-sm' : 'bg-secondary border-border'}`}>
+                <div className="flex flex-col items-end">
+                  <span className={`text-[13px] font-extrabold flex items-center gap-1.5 ${activeConversation.aiEnabled ?? true ? 'text-emerald-700 dark:text-emerald-400' : 'text-muted-foreground'}`}>
+                    <Bot className={`w-4 h-4 ${activeConversation.aiEnabled ?? true ? 'animate-pulse' : ''}`} /> 
+                    AI Auto-Reply
+                  </span>
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
+                    {activeConversation.aiEnabled ?? true ? 'Active' : 'Disabled'}
+                  </span>
+                </div>
                 <Switch 
                   checked={activeConversation.aiEnabled ?? true} 
                   onCheckedChange={toggleAiEnabled} 
                   disabled={togglingAi}
+                  className={activeConversation.aiEnabled ?? true ? 'data-[state=checked]:bg-emerald-500' : ''}
                 />
               </div>
             </div>
