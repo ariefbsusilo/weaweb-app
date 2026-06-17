@@ -88,6 +88,7 @@ export default function InboxPage() {
   };
 
   const activeConversation = conversations.find(c => c.id === activeContactId);
+  const hasConnectedDevice = devices.some(d => d.status === "connect");
   const messages = activeConversation?.messages ? [...activeConversation.messages].reverse() : [];
 
   useEffect(() => {
@@ -399,38 +400,49 @@ export default function InboxPage() {
                   </button>
                 </div>
               )}
-              <form onSubmit={handleSendMessage} className="flex gap-3 max-w-4xl mx-auto items-end">
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  className="hidden" 
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files.length > 0) {
-                      setAttachment(e.target.files[0]);
-                    }
-                  }}
-                />
-                <button 
-                  type="button" 
-                  onClick={() => fileInputRef.current?.click()}
-                  className="h-11 w-11 flex-shrink-0 rounded-[0.35rem] bg-secondary hover:bg-secondary/80 text-foreground shadow-sm border border-border flex items-center justify-center transition-all"
-                >
-                  <Paperclip className="w-5 h-5" />
-                </button>
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type a message..."
-                  className="flex-1 h-11 bg-background focus:bg-background rounded-[0.35rem] px-4 shadow-sm border border-border focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-foreground placeholder-muted-foreground"
-                />
-                <button 
-                  type="submit"
-                  disabled={!newMessage.trim() && !attachment}
-                  className="h-11 w-11 flex-shrink-0 rounded-[0.35rem] bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm flex items-center justify-center transition-all disabled:opacity-50"
-                >
-                  <Send className="w-5 h-5 ml-1" />
-                </button>
+              <form onSubmit={handleSendMessage} className="flex flex-col gap-2 max-w-4xl mx-auto">
+                {!hasConnectedDevice && (
+                  <div className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 rounded-md text-xs font-medium mb-1">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    You must connect a WhatsApp device in the Devices menu before you can send messages.
+                  </div>
+                )}
+                <div className="flex gap-3 items-end w-full">
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        setAttachment(e.target.files[0]);
+                      }
+                    }}
+                    disabled={!hasConnectedDevice}
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={!hasConnectedDevice}
+                    className="h-11 w-11 flex-shrink-0 rounded-[0.35rem] bg-secondary hover:bg-secondary/80 text-foreground shadow-sm border border-border flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Paperclip className="w-5 h-5" />
+                  </button>
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder={hasConnectedDevice ? "Type a message..." : "Connect a device to chat"}
+                    disabled={!hasConnectedDevice}
+                    className="flex-1 h-11 bg-background focus:bg-background rounded-[0.35rem] px-4 shadow-sm border border-border focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-foreground placeholder-muted-foreground disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-secondary/50"
+                  />
+                  <button 
+                    type="submit"
+                    disabled={!hasConnectedDevice || (!newMessage.trim() && !attachment)}
+                    className="h-11 w-11 flex-shrink-0 rounded-[0.35rem] bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Send className="w-5 h-5 ml-1" />
+                  </button>
+                </div>
               </form>
             </div>
           </>

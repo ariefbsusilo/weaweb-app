@@ -83,6 +83,14 @@ export async function POST(req: Request) {
       const contact = await prisma.contact.findUnique({ where: { id: contactId }});
       if (!contact) return NextResponse.json({ error: "Contact not found" }, { status: 404 });
   
+      // Verify if there is a connected device
+      const connectedDevice = await prisma.device.findFirst({
+        where: { tenantId, status: "connect" }
+      });
+      if (!connectedDevice) {
+        return NextResponse.json({ error: "No connected device found. Please connect your WhatsApp device first." }, { status: 400 });
+      }
+  
       let wamid = `mock-wa-id-${Date.now()}`;
       try {
         console.log(`[NextJS] Sending POST to http://127.0.0.1:4010/send for tenant ${tenantId} to ${contact.phoneNumber}`);

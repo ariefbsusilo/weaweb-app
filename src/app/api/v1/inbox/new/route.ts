@@ -17,6 +17,14 @@ export async function POST(req: Request) {
     // Clean phone number
     const cleanPhone = phoneNumber.replace(/[^0-9]/g, "");
 
+    // Verify if there is a connected device
+    const connectedDevice = await prisma.device.findFirst({
+      where: { tenantId, status: "connect" }
+    });
+    if (!connectedDevice) {
+      return NextResponse.json({ error: "No connected device found. Please connect your WhatsApp device first." }, { status: 400 });
+    }
+
     // Find or create contact
     let contact = await prisma.contact.findUnique({
         where: { tenantId_phoneNumber: { tenantId, phoneNumber: cleanPhone } }
