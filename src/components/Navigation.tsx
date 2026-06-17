@@ -30,7 +30,7 @@ export function Navigation() {
       ]
     },
     { href: "/dashboard/campaigns", label: "Campaigns" },
-    { href: "/dashboard/chatbot", label: "Chatbot" },
+    { href: "/dashboard/chatbot", label: "Chat AI" },
     { href: "/dashboard/inbox", label: "Inbox" },
     { href: "/dashboard/analytics", label: "Analytics" },
     { href: "/dashboard/settings", label: "Settings", icon: Settings },

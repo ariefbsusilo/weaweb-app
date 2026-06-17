@@ -810,9 +810,9 @@ export default function AiConfigPage() {
       
       {/* Header Back Button */}
       <div className="px-6 py-4 flex items-center">
-        <Button variant="ghost" className="pl-0 hover:bg-transparent hover:text-primary" onClick={() => router.push("/dashboard/devices")}>
+        <Button variant="ghost" className="pl-0 hover:bg-transparent hover:text-primary" onClick={() => router.push("/dashboard/chatbot")}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Devices
+          Back to Chat AI
         </Button>
       </div>
 

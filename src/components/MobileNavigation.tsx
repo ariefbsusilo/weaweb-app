@@ -13,7 +13,7 @@ export function MobileNavigation() {
     { href: "/dashboard/devices", icon: MonitorSmartphone, label: "Devices" },
     { href: "/dashboard/inbox", icon: MessageCircle, label: "Inbox" },
     { href: "/dashboard/campaigns", icon: Megaphone, label: "Campaigns" },
-    { href: "/dashboard/chatbot", icon: Bot, label: "Chatbot" },
+    { href: "/dashboard/chatbot", icon: Bot, label: "Chat AI" },
   ]
 
   return (

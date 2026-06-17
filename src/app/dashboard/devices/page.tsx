@@ -352,12 +352,6 @@ export default function DevicesPage() {
                   </div>
 
                   <div className="flex gap-1.5">
-                    <Link href={`/dashboard/devices/${device.id}/ai`}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground" title="AI Config">
-                        <Bot className="w-4 h-4" />
-                      </Button>
-                    </Link>
-                    
                     <DropdownMenu>
                       <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 rounded-md bg-transparent hover:bg-secondary focus-visible:outline-none transition-colors">
                           <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
