@@ -416,24 +416,30 @@ export default function AiConfigPage() {
       case "General":
         return (
           <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="text-center space-y-1 mb-8">
-               <h3 className="text-2xl font-bold">{device?.name || "Device Name"}</h3>
-               <p className="text-muted-foreground text-sm">Description</p>
-               <p className="text-xs font-semibold mt-2">Last Trained: 10:17</p>
-            </div>
-
             <div className="space-y-4">
-              <div className="text-center">
-                <h4 className="text-[#38bdf8] font-bold text-lg">AI Agent Behavior</h4>
-                <p className="text-sm text-muted-foreground">This is the AI Prompt that defines the AI's speaking style and identity.</p>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
+                  <Bot className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-xl text-foreground leading-tight">AI Persona & Behavior</h4>
+                  <p className="text-[13px] font-medium text-muted-foreground mt-0.5">Define the identity, rules, and speaking style of your AI assistant.</p>
+                </div>
               </div>
               
-              <Textarea 
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                className="min-h-[200px] max-h-[400px] overflow-y-auto font-mono text-sm resize-y rounded-md"
-                placeholder="Enter your system prompt here..."
-              />
+              <div className="relative group">
+                <Textarea 
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  className="min-h-[250px] max-h-[500px] overflow-y-auto font-mono text-sm resize-y rounded-xl border-border/60 bg-card p-5 shadow-sm transition-all focus:border-primary focus:ring-1 focus:ring-primary/50 group-hover:border-primary/30 leading-relaxed"
+                  placeholder="e.g. You are a helpful sales assistant for Weaweb. Always answer politely and concisely in Indonesian..."
+                />
+                <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest bg-secondary/80 px-2 py-1 rounded-md backdrop-blur-sm">
+                    System Prompt
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-4 mt-8 pt-8 border-t border-border/50">
@@ -806,24 +812,43 @@ export default function AiConfigPage() {
   };
 
   return (
-    <div className="flex flex-col h-full animate-in fade-in zoom-in-95 duration-500 bg-background">
+    <div className="flex flex-col h-full animate-in fade-in zoom-in-95 duration-500 bg-background/50">
       
-      {/* Header Back Button */}
-      <div className="px-6 py-4 flex items-center">
-        <Button variant="ghost" className="pl-0 hover:bg-transparent hover:text-primary" onClick={() => router.push("/dashboard/chatbot")}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Chat AI
-        </Button>
-      </div>
+      {/* Premium Header */}
+      <div className="relative border-b border-border/40 bg-card overflow-hidden">
+        {/* Abstract Background Elements */}
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary/0 via-primary/50 to-primary/0"></div>
+        <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/5 rounded-full blur-3xl"></div>
+        
+        <div className="px-6 py-4 flex items-center relative z-10">
+          <Button variant="ghost" size="sm" className="pl-2 pr-4 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground transition-all" onClick={() => router.push("/dashboard/chatbot")}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            <span className="font-semibold text-sm">Back to Chat AI</span>
+          </Button>
+        </div>
 
-      {/* Main Title Area */}
-      <div className="text-center mb-6">
-        <h2 className="text-3xl font-bold tracking-tight">{device?.name || "Loading..."}</h2>
-      </div>
+        <div className="px-8 pb-8 flex flex-col md:flex-row items-center md:items-end justify-between gap-6 relative z-10">
+          <div className="flex items-center gap-5">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/20 border border-primary/20">
+              <Bot className="w-8 h-8" />
+            </div>
+            <div>
+              <h2 className="text-3xl font-extrabold tracking-tight text-foreground">{device?.name || "Loading..."}</h2>
+              <div className="flex items-center gap-3 mt-1.5">
+                <span className="text-sm font-mono text-muted-foreground bg-secondary/50 px-2 py-0.5 rounded-md border border-border/50">
+                  {device?.phoneNumber || "..."}
+                </span>
+                <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  AI Ready
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
 
-      {/* Navigation Tabs */}
-      <div className="border-b border-border/50">
-        <div className="flex items-center justify-center gap-2 md:gap-8 overflow-x-auto px-4">
+        {/* Premium Navigation Tabs */}
+        <div className="px-6 flex items-center justify-start gap-1 overflow-x-auto relative z-10 scrollbar-hide">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isSelected = activeTab === tab.id;
@@ -831,13 +856,13 @@ export default function AiConfigPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 pb-3 px-2 border-b-2 transition-all font-semibold text-sm whitespace-nowrap
+                className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-all font-bold text-sm whitespace-nowrap outline-none
                   ${isSelected 
                     ? "border-primary text-primary" 
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/30"
                   }`}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className={`w-4 h-4 ${isSelected ? 'animate-pulse duration-1000' : ''}`} />
                 {tab.id}
               </button>
             );
@@ -846,11 +871,11 @@ export default function AiConfigPage() {
       </div>
 
       {/* Content Area - Split View */}
-      <div className={`flex-1 grid gap-0 overflow-hidden relative ${activeTab === "General" ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"}`}>
+      <div className={`flex-1 grid gap-0 overflow-hidden relative ${activeTab === "General" ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-1"}`}>
         
         {/* Left Side: Configuration */}
-        <div className="h-full overflow-y-auto p-6 md:p-10 pb-32">
-          <div className={`${activeTab === "General" ? "max-w-2xl" : activeTab === "Evaluation" ? "max-w-7xl" : "max-w-4xl"} mx-auto`}>
+        <div className={`h-full overflow-y-auto p-6 md:p-10 pb-32 ${activeTab === "General" ? "lg:col-span-2 border-r border-border/30" : ""}`}>
+          <div className={`${activeTab === "General" ? "max-w-3xl" : activeTab === "Evaluation" ? "max-w-7xl" : "max-w-4xl"} mx-auto`}>
             {renderTabContent()}
           </div>
         </div>
@@ -860,12 +885,15 @@ export default function AiConfigPage() {
         <div className="h-full border-l border-border/50 bg-[#f9fafb] dark:bg-card/30 hidden lg:block p-8 pb-32">
           <div className="bg-white dark:bg-background border border-border/60 shadow-lg rounded-[1.5rem] h-[80vh] max-h-[800px] flex flex-col overflow-hidden max-w-md mx-auto relative">
             {/* Phone Header */}
-            <div className="bg-white dark:bg-background border-b border-border/40 p-4 flex items-center justify-between shadow-sm z-10">
+            <div className="bg-gradient-to-r from-primary/10 to-transparent dark:bg-background border-b border-border/40 p-4 flex items-center justify-between shadow-sm z-10">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
-                  <Bot className="w-4 h-4 text-muted-foreground" />
+                <div className="w-9 h-9 bg-primary/20 rounded-xl flex items-center justify-center shadow-sm">
+                  <Bot className="w-5 h-5 text-primary" />
                 </div>
-                <span className="font-semibold text-[15px]">Sandbox Preview</span>
+                <div>
+                  <span className="font-bold text-[15px] block leading-none">Sandbox Preview</span>
+                  <span className="text-[11px] text-muted-foreground font-medium mt-1 block">Live AI Testing</span>
+                </div>
               </div>
               <button 
                 onClick={() => setChatMessages([])}

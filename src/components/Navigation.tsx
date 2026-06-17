@@ -39,7 +39,13 @@ export function Navigation() {
   return (
     <nav className="flex flex-col gap-1 w-full py-4">
       {links.map((link) => {
-        const isActive = pathname === link.href || (link.href !== "/dashboard" && pathname.startsWith(link.href))
+        let isActive = pathname === link.href || (link.href !== "/dashboard" && pathname.startsWith(link.href))
+        
+        // Special case for AI Config pages under devices
+        if (pathname.includes("/ai")) {
+          if (link.href === "/dashboard/chatbot") isActive = true;
+          if (link.href === "/dashboard/devices") isActive = false;
+        }
         const Icon = link.icon
         const hasSubItems = link.subItems && link.subItems.length > 0
         const isOpen = openMenus[link.href]
