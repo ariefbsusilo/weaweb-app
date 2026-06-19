@@ -6,7 +6,7 @@ export async function POST(req: Request) {
     const apiKey = await authenticateApiKey(req);
     if (!apiKey) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const res = await fetch(`http://127.0.0.1:4010/action`, {
+    const res = await fetch(`${process.env.WORKER_URL || "http://127.0.0.1:4010"}/action`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tenantId: apiKey.tenantId, action: "logout" })

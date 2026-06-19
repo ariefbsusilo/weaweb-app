@@ -25,7 +25,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Message does not have a WhatsApp ID yet" }, { status: 400 });
     }
 
-    const res = await fetch(`http://127.0.0.1:4010/delete`, {
+    const res = await fetch(`${process.env.WORKER_URL || "http://127.0.0.1:4010"}/delete`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ 

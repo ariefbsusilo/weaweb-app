@@ -50,7 +50,7 @@ export async function POST(req: Request) {
 
     // We can directly send to the local worker
     try {
-        await fetch("http://127.0.0.1:4010/send", {
+        await fetch((process.env.WORKER_URL || "http://127.0.0.1:4010") + "/send", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"

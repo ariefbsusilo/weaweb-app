@@ -94,7 +94,7 @@ export async function POST(req: Request) {
       let wamid = `mock-wa-id-${Date.now()}`;
       try {
         console.log(`[NextJS] Sending POST to http://127.0.0.1:4010/send for tenant ${tenantId} to ${contact.phoneNumber}`);
-        const res = await fetch("http://127.0.0.1:4010/send", {
+        const res = await fetch((process.env.WORKER_URL || "http://127.0.0.1:4010") + "/send", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ tenantId, phoneNumber: contact.phoneNumber, content, mediaUrl, mediaType })

@@ -13,7 +13,7 @@ export async function GET(req: Request) {
     let qr = null;
     if (tenant?.whatsappStatus === "connecting") {
       try {
-        const res = await fetch(`http://127.0.0.1:4010/qr/${tenantId}`);
+        const res = await fetch(`${process.env.WORKER_URL || "http://127.0.0.1:4010"}/qr/${tenantId}`);
         if (res.ok) {
           const data = await res.json();
           qr = data.qr;
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
       
       // Tell worker to start session
       try {
-        await fetch("http://127.0.0.1:4010/action", {
+        await fetch((process.env.WORKER_URL || "http://127.0.0.1:4010") + "/action", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ tenantId, action: "start" })
@@ -58,7 +58,7 @@ export async function POST(req: Request) {
       }
     } else if (action === "logout") {
       try {
-        await fetch("http://127.0.0.1:4010/action", {
+        await fetch((process.env.WORKER_URL || "http://127.0.0.1:4010") + "/action", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ tenantId, action: "logout" })
