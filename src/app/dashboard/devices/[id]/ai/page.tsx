@@ -65,6 +65,33 @@ export default function AiConfigPage() {
   const [isAddingTool, setIsAddingTool] = useState(false);
   const [isDeletingTool, setIsDeletingTool] = useState<string | null>(null);
 
+  // Integration Settings Config State (generic per-integration configs)
+  const [integrationConfig, setIntegrationConfig] = useState<Record<string, any>>({});
+  const [savingIntConfig, setSavingIntConfig] = useState(false);
+
+  const getIntConfig = (name: string) => {
+    return integrationConfig[name] || {};
+  };
+  const updateIntConfig = (name: string, key: string, value: any) => {
+    setIntegrationConfig(prev => ({
+      ...prev,
+      [name]: { ...prev[name], [key]: value }
+    }));
+  };
+
+  // Load existing config when opening an integration settings dialog
+  useEffect(() => {
+    if (activeSettingsApp) {
+      const existing = integrations.find(i => i.name === activeSettingsApp.name);
+      if (existing?.configJson) {
+        try {
+          const parsed = JSON.parse(existing.configJson);
+          setIntegrationConfig(prev => ({ ...prev, [activeSettingsApp.name]: parsed }));
+        } catch(e) {}
+      }
+    }
+  }, [activeSettingsApp, integrations]);
+
   // Evaluations State
   const [evaluations, setEvaluations] = useState<any[]>([]);
 
@@ -322,6 +349,33 @@ export default function AiConfigPage() {
       alert("Something went wrong");
     } finally {
       setSavingNotif(false);
+    }
+  };
+
+  const handleSaveIntegrationConfig = async (name: string) => {
+    setSavingIntConfig(true);
+    try {
+      const config = getIntConfig(name);
+      const res = await fetch(`/api/devices/${deviceId}/ai-integrations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          configJson: JSON.stringify(config),
+          isActive: true
+        })
+      });
+      if (res.ok) {
+        alert(`${name} configuration saved successfully!`);
+        setActiveSettingsApp(null);
+        await fetchIntegrations();
+      } else {
+        alert("Failed to save configuration");
+      }
+    } catch (e) {
+      alert("Something went wrong");
+    } finally {
+      setSavingIntConfig(false);
     }
   };
 
@@ -1078,24 +1132,131 @@ export default function AiConfigPage() {
                 </select>
               </div>
             </div>
-          ) : (
-            <div className="py-6 flex flex-col items-center justify-center text-center space-y-4">
-              <div className="p-3 bg-secondary/30 rounded-full border border-border">
-                <Settings className="w-8 h-8 text-muted-foreground opacity-50" />
+          ) : activeSettingsApp?.name === "Allow List (Whitelist numbers)" ? (
+            <div className="py-4 space-y-4">
+              <div className="space-y-2">
+                <Label className="font-bold text-sm">Whitelisted Phone Numbers</Label>
+                <p className="text-xs text-muted-foreground">Only these numbers will be able to interact with the AI. Leave empty to allow all.</p>
               </div>
-              <p className="text-sm text-muted-foreground max-w-[250px]">
-                Advanced configuration for this integration is currently under development. It will be available in the next update.
-              </p>
+              <div className="space-y-2">
+                {(getIntConfig("Allow List (Whitelist numbers)").numbers || []).map((num: string, idx: number) => (
+                  <div key={idx} className="flex gap-2 items-center">
+                    <Input value={num} onChange={e => {
+                      const nums = [...(getIntConfig("Allow List (Whitelist numbers)").numbers || [])];
+                      nums[idx] = e.target.value;
+                      updateIntConfig("Allow List (Whitelist numbers)", "numbers", nums);
+                    }} placeholder="e.g. 628123456789" />
+                    <Button variant="ghost" size="icon" onClick={() => {
+                      const nums = (getIntConfig("Allow List (Whitelist numbers)").numbers || []).filter((_: any, i: number) => i !== idx);
+                      updateIntConfig("Allow List (Whitelist numbers)", "numbers", nums);
+                    }} className="text-destructive hover:bg-destructive/10"><Trash2 className="w-4 h-4" /></Button>
+                  </div>
+                ))}
+                <Button variant="outline" size="sm" onClick={() => {
+                  const nums = [...(getIntConfig("Allow List (Whitelist numbers)").numbers || []), ""];
+                  updateIntConfig("Allow List (Whitelist numbers)", "numbers", nums);
+                }}><Plus className="w-4 h-4 mr-1" /> Add Number</Button>
+              </div>
+            </div>
+          ) : activeSettingsApp?.name === "Nearest Location" ? (
+            <div className="py-4 space-y-4">
+              <div className="space-y-2">
+                <Label className="font-bold text-sm">Store / Branch Locations</Label>
+                <p className="text-xs text-muted-foreground">Add your store or branch locations so the AI can recommend the nearest one.</p>
+              </div>
+              <div className="space-y-3">
+                {(getIntConfig("Nearest Location").locations || []).map((loc: any, idx: number) => (
+                  <div key={idx} className="border border-border rounded-lg p-3 space-y-2 bg-secondary/10">
+                    <Input value={loc.name || ""} onChange={e => {
+                      const locs = [...(getIntConfig("Nearest Location").locations || [])];
+                      locs[idx] = { ...locs[idx], name: e.target.value };
+                      updateIntConfig("Nearest Location", "locations", locs);
+                    }} placeholder="Location Name (e.g. Branch Jakarta Selatan)" />
+                    <Input value={loc.address || ""} onChange={e => {
+                      const locs = [...(getIntConfig("Nearest Location").locations || [])];
+                      locs[idx] = { ...locs[idx], address: e.target.value };
+                      updateIntConfig("Nearest Location", "locations", locs);
+                    }} placeholder="Full Address" />
+                    <div className="flex gap-2">
+                      <Input value={loc.city || ""} onChange={e => {
+                        const locs = [...(getIntConfig("Nearest Location").locations || [])];
+                        locs[idx] = { ...locs[idx], city: e.target.value };
+                        updateIntConfig("Nearest Location", "locations", locs);
+                      }} placeholder="City" />
+                      <Input value={loc.phone || ""} onChange={e => {
+                        const locs = [...(getIntConfig("Nearest Location").locations || [])];
+                        locs[idx] = { ...locs[idx], phone: e.target.value };
+                        updateIntConfig("Nearest Location", "locations", locs);
+                      }} placeholder="Phone" />
+                      <Button variant="ghost" size="icon" onClick={() => {
+                        const locs = (getIntConfig("Nearest Location").locations || []).filter((_: any, i: number) => i !== idx);
+                        updateIntConfig("Nearest Location", "locations", locs);
+                      }} className="text-destructive"><Trash2 className="w-4 h-4" /></Button>
+                    </div>
+                  </div>
+                ))}
+                <Button variant="outline" size="sm" onClick={() => {
+                  const locs = [...(getIntConfig("Nearest Location").locations || []), { name: "", address: "", city: "", phone: "" }];
+                  updateIntConfig("Nearest Location", "locations", locs);
+                }}><Plus className="w-4 h-4 mr-1" /> Add Location</Button>
+              </div>
+            </div>
+          ) : activeSettingsApp?.name === "Google Sheets" ? (
+            <div className="py-4 space-y-4">
+              <div className="space-y-2">
+                <Label className="font-bold text-sm">Google Spreadsheet ID</Label>
+                <p className="text-xs text-muted-foreground">The ID from your Google Sheets URL (e.g. the part between /d/ and /edit)</p>
+                <Input value={getIntConfig("Google Sheets").spreadsheetId || ""} onChange={e => updateIntConfig("Google Sheets", "spreadsheetId", e.target.value)} placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms" />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-bold text-sm">Google API Key (optional)</Label>
+                <Input type="password" value={getIntConfig("Google Sheets").googleApiKey || ""} onChange={e => updateIntConfig("Google Sheets", "googleApiKey", e.target.value)} placeholder="Enter your Google API Key" />
+              </div>
+            </div>
+          ) : activeSettingsApp?.name === "Check Shipping Cost" ? (
+            <div className="py-4 space-y-4">
+              <div className="space-y-2">
+                <Label className="font-bold text-sm">RajaOngkir API Key (optional)</Label>
+                <p className="text-xs text-muted-foreground">Get your API key from rajaongkir.com for accurate shipping costs. Without it, estimates will be approximate.</p>
+                <Input type="password" value={getIntConfig("Check Shipping Cost").rajaOngkirApiKey || ""} onChange={e => updateIntConfig("Check Shipping Cost", "rajaOngkirApiKey", e.target.value)} placeholder="Enter RajaOngkir API Key" />
+              </div>
+            </div>
+          ) : activeSettingsApp?.name === "Netzme" ? (
+            <div className="py-4 space-y-4">
+              <div className="space-y-2">
+                <Label className="font-bold text-sm">Netzme API Key</Label>
+                <p className="text-xs text-muted-foreground">Required to generate real QRIS payment links. Get your key from netzme.com</p>
+                <Input type="password" value={getIntConfig("Netzme").netzmeApiKey || ""} onChange={e => updateIntConfig("Netzme", "netzmeApiKey", e.target.value)} placeholder="Enter Netzme API Key" />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-bold text-sm">Merchant Name</Label>
+                <Input value={getIntConfig("Netzme").merchantName || ""} onChange={e => updateIntConfig("Netzme", "merchantName", e.target.value)} placeholder="Your business name" />
+              </div>
+            </div>
+          ) : (
+            <div className="py-4 space-y-2">
+              <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                <BadgeCheck className="w-6 h-6 text-green-600 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-bold text-green-700 dark:text-green-400">Ready to use</p>
+                  <p className="text-xs text-green-600 dark:text-green-500 mt-0.5">This integration works out of the box. Simply activate it and the AI will use it automatically when relevant.</p>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2 px-1">{activeSettingsApp?.desc}</p>
             </div>
           )}
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setActiveSettingsApp(null)}>Close</Button>
-            {activeSettingsApp?.name === "Send Personal Notification" && (
+            {activeSettingsApp?.name === "Send Personal Notification" ? (
               <Button onClick={handleSaveNotification} disabled={savingNotif}>
                 {savingNotif ? "Saving..." : "Save Configuration"}
               </Button>
-            )}
+            ) : (["Allow List (Whitelist numbers)", "Nearest Location", "Google Sheets", "Check Shipping Cost", "Netzme"].includes(activeSettingsApp?.name || "")) ? (
+              <Button onClick={() => handleSaveIntegrationConfig(activeSettingsApp!.name)} disabled={savingIntConfig}>
+                {savingIntConfig ? "Saving..." : "Save Configuration"}
+              </Button>
+            ) : null}
           </DialogFooter>
         </DialogContent>
       </Dialog>

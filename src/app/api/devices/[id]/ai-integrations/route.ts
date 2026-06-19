@@ -24,8 +24,9 @@ export async function GET(
       return NextResponse.json({ error: "Device not found" }, { status: 404 })
     }
 
+    // Return ALL integrations (built-in + custom)
     const integrations = await prisma.aiIntegration.findMany({
-      where: { deviceId: device.id, provider: "custom" },
+      where: { deviceId: device.id },
       orderBy: { createdAt: "desc" }
     })
 
@@ -59,26 +60,48 @@ export async function POST(
     }
 
     const body = await req.json()
-    const { name, description, webhookUrl } = body
+    const { name, description, webhookUrl, isActive, configJson } = body
 
-    if (!name || !webhookUrl) {
-      return NextResponse.json({ error: "Name and Webhook URL are required" }, { status: 400 })
+    if (!name) {
+      return NextResponse.json({ error: "Name is required" }, { status: 400 })
     }
 
-    const integration = await prisma.aiIntegration.create({
-      data: {
-        deviceId: device.id,
-        name,
-        description,
-        webhookUrl,
-        provider: "custom",
-        isActive: true
-      }
+    // Check if integration already exists (upsert by name)
+    const existing = await prisma.aiIntegration.findFirst({
+      where: { deviceId: device.id, name }
     })
+
+    let integration;
+    if (existing) {
+      // Update existing integration
+      const updateData: any = {};
+      if (isActive !== undefined) updateData.isActive = isActive;
+      if (description !== undefined) updateData.description = description;
+      if (webhookUrl !== undefined) updateData.webhookUrl = webhookUrl;
+      if (configJson !== undefined) updateData.configJson = typeof configJson === "string" ? configJson : JSON.stringify(configJson);
+      
+      integration = await prisma.aiIntegration.update({
+        where: { id: existing.id },
+        data: updateData
+      })
+    } else {
+      // Create new integration
+      integration = await prisma.aiIntegration.create({
+        data: {
+          deviceId: device.id,
+          name,
+          description: description || "",
+          webhookUrl: webhookUrl || null,
+          provider: webhookUrl ? "custom" : "builtin",
+          configJson: configJson ? (typeof configJson === "string" ? configJson : JSON.stringify(configJson)) : null,
+          isActive: isActive !== undefined ? isActive : true
+        }
+      })
+    }
 
     return NextResponse.json(integration)
   } catch (error) {
-    console.error("Failed to create Custom AI Tool:", error)
+    console.error("Failed to create/update AI Integration:", error)
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
   }
 }

@@ -2,6 +2,7 @@ import { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaile
 import { Boom } from "@hapi/boom";
 import pino from "pino";
 import { prisma } from "./prisma";
+import { checkAllowList, buildGeminiTools, getIntegrationNameByFunctionName, executeIntegration, executeCustomWebhook } from "./integrations";
 import path from "path";
 import fs from "fs";
 
@@ -274,6 +275,15 @@ export async function initWhatsApp(deviceId: string, tenantId: string, forceRecr
         try {
           const aiConfig = await prisma.aiConfig.findUnique({ where: { deviceId } });
           if (aiConfig && aiConfig.isActive && aiConfig.apiKey && contact?.aiEnabled !== false) {
+            // === Allow List Pre-Check ===
+            const allowCheck = await checkAllowList(deviceId, phoneNumber);
+            if (!allowCheck.allowed) {
+              if (allowCheck.message) {
+                await sendMessageWA(tenantId, phoneNumber, allowCheck.message, null, null, null, deviceId);
+              }
+              return; // Block this message entirely
+            }
+
             const aiKnowledgeSources = await prisma.aiKnowledgeSource.findMany({ where: { deviceId } });
             
             let systemPrompt = aiConfig.prompt || "You are a helpful WhatsApp assistant.";
@@ -282,52 +292,208 @@ export async function initWhatsApp(deviceId: string, tenantId: string, forceRecr
             }
             systemPrompt += "\n\nKeep your answers concise, friendly, and suitable for WhatsApp. Answer in Indonesian unless requested otherwise.";
 
+            // === Fetch Active Integrations & Build Tools ===
+            const activeIntegrations = await prisma.aiIntegration.findMany({
+              where: { deviceId, isActive: true }
+            });
+            const toolDeclarations = buildGeminiTools(activeIntegrations);
+
             let aiReply = "Maaf, AI sedang mengalami gangguan.";
             let success = false;
 
+            const integrationCtx = {
+              deviceId,
+              tenantId,
+              phoneNumber,
+              contactName: msg.pushName || contact?.name || "Customer",
+              configJson: null as string | null
+            };
+
             if (aiConfig.provider === "gemini") {
-              const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${aiConfig.apiKey}`, {
+              // Build Gemini request with function calling
+              const requestBody: any = {
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                contents: [{ parts: [{ text: incomingText }] }]
+              };
+
+              if (toolDeclarations.length > 0) {
+                requestBody.tools = [{
+                  functionDeclarations: toolDeclarations
+                }];
+              }
+
+              const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${aiConfig.apiKey}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  systemInstruction: { parts: [{ text: systemPrompt }] },
-                  contents: [{ parts: [{ text: incomingText }] }]
-                })
+                body: JSON.stringify(requestBody)
               });
 
               if (res.ok) {
                 const data = await res.json();
-                if (data.candidates && data.candidates[0].content.parts[0].text) {
-                  aiReply = data.candidates[0].content.parts[0].text;
-                  success = true;
+                const candidate = data.candidates?.[0];
+                
+                if (candidate?.content?.parts) {
+                  // Check if AI wants to call a function
+                  const functionCall = candidate.content.parts.find((p: any) => p.functionCall);
+                  
+                  if (functionCall) {
+                    const fc = functionCall.functionCall;
+                    console.log(`[WA] AI called function: ${fc.name}`, fc.args);
+                    
+                    // Find which integration this belongs to
+                    const integrationName = getIntegrationNameByFunctionName(fc.name, activeIntegrations);
+                    
+                    if (integrationName) {
+                      // Get config for this integration
+                      const intRecord = activeIntegrations.find(i => i.name === integrationName);
+                      integrationCtx.configJson = intRecord?.configJson || null;
+                      
+                      let toolResult;
+                      if (intRecord?.provider === "custom" && intRecord?.webhookUrl) {
+                        toolResult = await executeCustomWebhook(intRecord, fc.args, integrationCtx);
+                      } else {
+                        toolResult = await executeIntegration(integrationName, fc.name, fc.args, integrationCtx);
+                      }
+                      
+                      // Send function result back to Gemini for a natural response
+                      const followUpBody: any = {
+                        systemInstruction: { parts: [{ text: systemPrompt }] },
+                        contents: [
+                          { role: "user", parts: [{ text: incomingText }] },
+                          { role: "model", parts: [{ functionCall: { name: fc.name, args: fc.args } }] },
+                          { role: "user", parts: [{ functionResponse: { name: fc.name, response: { result: toolResult.message } } }] }
+                        ]
+                      };
+
+                      if (toolDeclarations.length > 0) {
+                        followUpBody.tools = [{ functionDeclarations: toolDeclarations }];
+                      }
+
+                      const followUpRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${aiConfig.apiKey}`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(followUpBody)
+                      });
+                      
+                      if (followUpRes.ok) {
+                        const followUpData = await followUpRes.json();
+                        const textPart = followUpData.candidates?.[0]?.content?.parts?.find((p: any) => p.text);
+                        if (textPart) {
+                          aiReply = textPart.text;
+                          success = true;
+                        } else {
+                          aiReply = toolResult.message;
+                          success = true;
+                        }
+                      } else {
+                        aiReply = toolResult.message;
+                        success = true;
+                      }
+                    }
+                  } else {
+                    // Regular text response (no function call)
+                    const textPart = candidate.content.parts.find((p: any) => p.text);
+                    if (textPart) {
+                      aiReply = textPart.text;
+                      success = true;
+                    }
+                  }
                 }
               } else {
                 console.error("[WA] Gemini API error:", await res.text());
               }
             } else if (aiConfig.provider === "openai") {
-               const res = await fetch("https://api.openai.com/v1/chat/completions", {
-                 method: "POST",
-                 headers: { 
-                   "Content-Type": "application/json",
-                   "Authorization": `Bearer ${aiConfig.apiKey}`
-                 },
-                 body: JSON.stringify({
-                   model: "gpt-4o-mini",
-                   messages: [
-                     { role: "system", content: systemPrompt },
-                     { role: "user", content: incomingText }
-                   ]
-                 })
-               });
-               if (res.ok) {
-                 const data = await res.json();
-                 if (data.choices && data.choices[0].message.content) {
-                   aiReply = data.choices[0].message.content;
-                   success = true;
-                 }
-               } else {
-                 console.error("[WA] OpenAI API error:", await res.text());
-               }
+              // Build OpenAI request with tool calls
+              const requestBody: any = {
+                model: "gpt-4o-mini",
+                messages: [
+                  { role: "system", content: systemPrompt },
+                  { role: "user", content: incomingText }
+                ]
+              };
+
+              if (toolDeclarations.length > 0) {
+                requestBody.tools = toolDeclarations.map(t => ({
+                  type: "function",
+                  function: {
+                    name: t.name,
+                    description: t.description,
+                    parameters: t.parameters
+                  }
+                }));
+              }
+
+              const res = await fetch("https://api.openai.com/v1/chat/completions", {
+                method: "POST",
+                headers: { 
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${aiConfig.apiKey}`
+                },
+                body: JSON.stringify(requestBody)
+              });
+              
+              if (res.ok) {
+                const data = await res.json();
+                const choice = data.choices?.[0];
+                
+                if (choice?.message?.tool_calls && choice.message.tool_calls.length > 0) {
+                  const toolCall = choice.message.tool_calls[0];
+                  const fc = toolCall.function;
+                  let fcArgs: any = {};
+                  try { fcArgs = JSON.parse(fc.arguments); } catch(e) {}
+                  
+                  const integrationName = getIntegrationNameByFunctionName(fc.name, activeIntegrations);
+                  
+                  if (integrationName) {
+                    const intRecord = activeIntegrations.find(i => i.name === integrationName);
+                    integrationCtx.configJson = intRecord?.configJson || null;
+                    
+                    let toolResult;
+                    if (intRecord?.provider === "custom" && intRecord?.webhookUrl) {
+                      toolResult = await executeCustomWebhook(intRecord, fcArgs, integrationCtx);
+                    } else {
+                      toolResult = await executeIntegration(integrationName, fc.name, fcArgs, integrationCtx);
+                    }
+                    
+                    // Send function result back to OpenAI
+                    const followUpRes = await fetch("https://api.openai.com/v1/chat/completions", {
+                      method: "POST",
+                      headers: { 
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${aiConfig.apiKey}`
+                      },
+                      body: JSON.stringify({
+                        model: "gpt-4o-mini",
+                        messages: [
+                          { role: "system", content: systemPrompt },
+                          { role: "user", content: incomingText },
+                          choice.message,
+                          { role: "tool", tool_call_id: toolCall.id, content: toolResult.message }
+                        ]
+                      })
+                    });
+                    
+                    if (followUpRes.ok) {
+                      const followUpData = await followUpRes.json();
+                      if (followUpData.choices?.[0]?.message?.content) {
+                        aiReply = followUpData.choices[0].message.content;
+                        success = true;
+                      } else {
+                        aiReply = toolResult.message;
+                        success = true;
+                      }
+                    } else {
+                      aiReply = toolResult.message;
+                      success = true;
+                    }
+                  }
+                } else if (choice?.message?.content) {
+                  aiReply = choice.message.content;
+                  success = true;
+                }
+              } else {
+                console.error("[WA] OpenAI API error:", await res.text());
+              }
             }
 
             if (success) {
