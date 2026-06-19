@@ -411,7 +411,7 @@ async function executeCRM(args: any, ctx: IntegrationContext): Promise<ToolResul
           tenantId: ctx.tenantId,
           OR: [
             { phoneNumber: { contains: phone.replace(/[^0-9]/g, "") } },
-            { name: { contains: args.customer_name || "", mode: "insensitive" as any } }
+            { name: { contains: args.customer_name || "" } }
           ]
         }
       });

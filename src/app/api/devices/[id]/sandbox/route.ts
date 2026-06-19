@@ -111,7 +111,7 @@ export async function POST(
 
       if (choice?.message?.tool_calls && choice.message.tool_calls.length > 0) {
         const toolCall = choice.message.tool_calls[0];
-        const fc = toolCall.function;
+        const fc = (toolCall as any).function;
         let fcArgs: any = {};
         try { fcArgs = JSON.parse(fc.arguments); } catch(e) {}
 
