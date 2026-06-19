@@ -175,17 +175,24 @@ export default function InboxPage() {
     
     setSendingNew(true);
     try {
-      await fetch("/api/v1/inbox/new", {
+      const res = await fetch("/api/v1/inbox/new", {
         method: "POST",
         body: JSON.stringify({ phoneNumber: newPhone, content: newMsg }),
         headers: { "Content-Type": "application/json" }
       });
-      setShowNewChat(false);
-      setNewPhone("");
-      setNewMsg("");
-      await fetchConversations();
+      const data = await res.json();
+      
+      if (!res.ok || data.error) {
+        alert("Failed to send message: " + (data.error || "Unknown error"));
+      } else {
+        setShowNewChat(false);
+        setNewPhone("");
+        setNewMsg("");
+        await fetchConversations();
+      }
     } catch (error) {
       console.error(error);
+      alert("Failed to send message: Network error");
     } finally {
       setSendingNew(false);
     }
