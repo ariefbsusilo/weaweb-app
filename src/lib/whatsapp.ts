@@ -166,10 +166,16 @@ export async function initWhatsApp(deviceId: string, tenantId: string, forceRecr
 
       const isFromMe = msg.key.fromMe;
 
-      // Find contact in Weaweb DB (robust lookup for 62..., 0..., and +62...)
+      // Find contact in Weaweb DB (robust lookup for 62..., 0..., +62..., and bare numbers)
       let localNumber = phoneNumber;
       if (phoneNumber.startsWith("62")) {
           localNumber = "0" + phoneNumber.substring(2);
+      }
+
+      let bareNumber = phoneNumber.split("@")[0];
+      let bareLocalNumber = bareNumber;
+      if (bareNumber.startsWith("62")) {
+          bareLocalNumber = "0" + bareNumber.substring(2);
       }
 
       let contact = await prisma.contact.findFirst({
@@ -178,7 +184,10 @@ export async function initWhatsApp(deviceId: string, tenantId: string, forceRecr
               OR: [
                   { phoneNumber: phoneNumber },
                   { phoneNumber: localNumber },
-                  { phoneNumber: `+${phoneNumber}` }
+                  { phoneNumber: `+${phoneNumber}` },
+                  { phoneNumber: bareNumber },
+                  { phoneNumber: bareLocalNumber },
+                  { phoneNumber: `+${bareNumber}` }
               ]
           }
       });
