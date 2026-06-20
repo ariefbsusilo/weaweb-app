@@ -67,11 +67,20 @@ export async function POST(req: Request) {
       }
     } catch (e: any) {
       console.error("[Inbox New] Worker send failed:", e.message);
-      return NextResponse.json({ 
-        error: e.name === 'AbortError'
-          ? "WhatsApp service timeout - worker may be starting up, please try again"
-          : `Failed to send: ${e.message}`
-      }, { status: 500 });
+      console.log("[Inbox New] Falling back to local sendMessageWA...");
+      
+      try {
+        const { sendMessageWA } = await import("@/lib/whatsapp");
+        const result = await sendMessageWA(tenantId, cleanPhone, content);
+        wamid = result?.key?.id || wamid;
+        sendStatus = "sent";
+        console.log("[Inbox New] Local send succeeded.");
+      } catch (localErr: any) {
+        console.error("[Inbox New] Local send failed:", localErr.message);
+        return NextResponse.json({ 
+          error: "Failed to send message. WhatsApp device might be disconnected or worker is unreachable."
+        }, { status: 500 });
+      }
     }
 
     // Save outbound message

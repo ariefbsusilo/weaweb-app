@@ -123,13 +123,20 @@ export async function POST(req: Request) {
       }
     } catch (e: any) {
       console.error("[Inbox POST] Worker send failed:", e.message);
-      // Don't fail the request - save message as queued, worker will retry
-      // Return error so UI can show the actual error
-      return NextResponse.json({ 
-        error: e.name === 'AbortError' 
-          ? "WhatsApp service timeout - worker may be starting up, please try again" 
-          : `Failed to send: ${e.message}` 
-      }, { status: 500 });
+      console.log("[Inbox POST] Falling back to local sendMessageWA...");
+      
+      try {
+        const { sendMessageWA } = await import("@/lib/whatsapp");
+        const result = await sendMessageWA(tenantId, contact.phoneNumber, content, mediaUrl || undefined, mediaType || undefined);
+        wamid = result?.key?.id || wamid;
+        sendStatus = "sent";
+        console.log("[Inbox POST] Local send succeeded.");
+      } catch (localErr: any) {
+        console.error("[Inbox POST] Local send failed:", localErr.message);
+        return NextResponse.json({ 
+          error: "Failed to send message. WhatsApp device might be disconnected or worker is unreachable."
+        }, { status: 500 });
+      }
     }
 
     const message = await prisma.message.create({
