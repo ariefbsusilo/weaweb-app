@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Check, CheckCheck, Trash2, MessageSquarePlus, Paperclip, X, Loader2, User, ChevronDown, Clock, Bot, AlertCircle } from "lucide-react";
+import { Send, Check, CheckCheck, Trash2, MessageSquarePlus, Paperclip, X, Loader2, User, ChevronDown, Clock, Bot, AlertCircle, WifiOff, Phone } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
@@ -22,10 +22,12 @@ export default function InboxPage() {
   const [newPhone, setNewPhone] = useState("");
   const [newMsg, setNewMsg] = useState("");
   const [sendingNew, setSendingNew] = useState(false);
+  const [sendingMsg, setSendingMsg] = useState(false);
   const [devices, setDevices] = useState<any[]>([]);
   const [evaluating, setEvaluating] = useState(false);
   const [evaluatingMessageId, setEvaluatingMessageId] = useState<string | null>(null);
   const [togglingAi, setTogglingAi] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   const toggleAiEnabled = async (checked: boolean) => {
     if (!activeContactId) return;
@@ -95,22 +97,6 @@ export default function InboxPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length, activeContactId]);
 
-  const getSenderNameDisplay = (senderName: string) => {
-    if (!senderName) return "Unknown";
-    if (/^\d+$/.test(senderName)) {
-      const contact = allContacts.find(c => c.phoneNumber.startsWith(senderName));
-      if (contact && contact.name && contact.name !== "Unknown") {
-        return contact.name;
-      }
-      return `+${senderName}`;
-    }
-    return senderName;
-  };
-
-  const getAvatarColor = (name: string) => {
-    return "bg-secondary text-secondary-foreground border border-border shadow-sm";
-  };
-
   const getInitials = (name: string) => {
     if (!name || name === "Unknown") return "?";
     const parts = name.split(/[ -]/);
@@ -121,6 +107,8 @@ export default function InboxPage() {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeContactId || (!newMessage.trim() && !attachment)) return;
+    setSendingMsg(true);
+    setSendError(null);
 
     try {
       const formData = new FormData();
@@ -137,15 +125,17 @@ export default function InboxPage() {
       const data = await res.json();
       
       if (!res.ok || data.error) {
-        alert("Failed to send message: " + (data.error || "Unknown error"));
+        setSendError(data.error || "Unknown error");
       } else {
         setNewMessage("");
         setAttachment(null);
+        setSendError(null);
+        fetchConversations();
       }
-      
-      fetchConversations();
-    } catch (error) {
-      console.error("Failed to send message", error);
+    } catch (error: any) {
+      setSendError("Network error: " + error.message);
+    } finally {
+      setSendingMsg(false);
     }
   };
 
@@ -183,7 +173,7 @@ export default function InboxPage() {
       const data = await res.json();
       
       if (!res.ok || data.error) {
-        alert("Failed to send message: " + (data.error || "Unknown error"));
+        alert("Gagal mengirim pesan: " + (data.error || "Unknown error"));
       } else {
         setShowNewChat(false);
         setNewPhone("");
@@ -192,7 +182,7 @@ export default function InboxPage() {
       }
     } catch (error) {
       console.error(error);
-      alert("Failed to send message: Network error");
+      alert("Gagal mengirim pesan: Network error");
     } finally {
       setSendingNew(false);
     }
@@ -221,25 +211,59 @@ export default function InboxPage() {
     }
   };
 
+  // AI is off by default (null = unset = false)
+  const aiEnabledForContact = activeConversation?.aiEnabled === true;
+
   return (
     <div className="h-[calc(100vh-8rem)] flex bg-card rounded-[0.35rem] border border-border shadow-sm overflow-hidden animate-in fade-in zoom-in-95 duration-500 relative">
-      <div className="w-1/3 border-r border-border flex flex-col bg-card z-10">
+      
+      {/* Sidebar - Conversation List */}
+      <div className="w-80 flex-shrink-0 border-r border-border flex flex-col bg-card z-10">
         <div className="p-4 border-b border-border bg-card flex justify-between items-center sticky top-0 z-20">
-          <h2 className="font-extrabold text-lg text-foreground tracking-tight">Messages</h2>
-          <Button variant="ghost" size="icon" onClick={() => setShowNewChat(true)} className="text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors rounded-[0.25rem] h-8 w-8">
+          <div>
+            <h2 className="font-extrabold text-lg text-foreground tracking-tight">Messages</h2>
+            <p className="text-xs text-muted-foreground font-medium">{conversations.length} conversations</p>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setShowNewChat(true)} 
+            className="text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors rounded-[0.25rem] h-9 w-9"
+            title="Start new chat"
+          >
             <MessageSquarePlus className="w-4 h-4" />
           </Button>
         </div>
+
+        {/* Device Warning Banner */}
+        {!hasConnectedDevice && !loading && (
+          <div className="mx-3 mt-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-md flex items-start gap-2">
+            <WifiOff className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-bold text-amber-600 dark:text-amber-400">No Device Connected</p>
+              <p className="text-[11px] text-amber-500/80 mt-0.5">Connect a WhatsApp device to send messages.</p>
+            </div>
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto">
           {loading && conversations.length === 0 ? (
             <div className="p-8 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
           ) : conversations.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground text-sm font-bold uppercase tracking-widest">No conversations found.</div>
+            <div className="p-8 text-center">
+              <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mx-auto mb-3">
+                <MessageSquarePlus className="w-7 h-7 text-muted-foreground" />
+              </div>
+              <p className="text-sm font-bold text-muted-foreground">No conversations yet</p>
+              <p className="text-xs text-muted-foreground/70 mt-1">Start a new chat to begin</p>
+            </div>
           ) : (
             <ul className="overflow-hidden">
               <AnimatePresence>
               {conversations.map((contact) => {
                 const displayName = contact.name && contact.name !== "Unknown" ? contact.name : `+${contact.phoneNumber.replace('@lid', '')}`;
+                const lastMsg = contact.messages && contact.messages[0];
+                const isActive = activeContactId === contact.id;
                 return (
                   <motion.li 
                     key={contact.id} 
@@ -250,32 +274,33 @@ export default function InboxPage() {
                     className="relative border-b border-border last:border-b-0 group"
                   >
                     <div
-                      onClick={() => setActiveContactId(contact.id)}
-                      className={`relative w-full h-full p-3 cursor-pointer transition-all ${activeContactId === contact.id ? 'bg-secondary/50 border-l-4 border-primary' : 'hover:bg-muted/50'}`}
+                      onClick={() => { setActiveContactId(contact.id); setSendError(null); }}
+                      className={`relative w-full h-full p-3 cursor-pointer transition-all ${isActive ? 'bg-primary/5 border-l-4 border-primary' : 'hover:bg-muted/50 border-l-4 border-transparent'}`}
                     >
-                      <div className="flex justify-between items-start mb-1">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-[0.35rem] flex items-center justify-center font-bold text-xs shadow-sm ${getAvatarColor(displayName)}`}>
-                            {getInitials(displayName)}
-                          </div>
-                          <div>
-                            <span className="font-extrabold text-sm text-foreground block truncate max-w-[150px]">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-xs bg-gradient-to-br from-primary/30 to-primary/10 text-primary border border-primary/20 shadow-sm">
+                          {getInitials(displayName)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-baseline">
+                            <span className="font-bold text-sm text-foreground truncate max-w-[140px]">
                               {displayName}
                             </span>
-                            <p className="text-[11px] text-muted-foreground truncate max-w-[150px] font-medium">{contact.messages && contact.messages[0] ? contact.messages[0].content : ""}</p>
+                            <span className="text-[10px] font-medium text-muted-foreground flex-shrink-0 ml-1">
+                              {lastMsg && new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
                           </div>
+                          <p className="text-[12px] text-muted-foreground truncate mt-0.5 font-medium">
+                            {lastMsg ? (lastMsg.direction === 'outbound' ? '✓ ' : '') + (lastMsg.content || `[${lastMsg.mediaType}]`) : ""}
+                          </p>
                         </div>
-                        <div className="flex flex-col items-end">
-                          <span className="text-[10px] font-bold text-muted-foreground mt-1">
-                            {contact.messages && contact.messages[0] && new Date(contact.messages[0].createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                          <button 
-                            onClick={(e) => deleteConversation(contact.id, e as any)}
-                            className="mt-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                        <button 
+                          onClick={(e) => deleteConversation(contact.id, e as any)}
+                          className="ml-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all flex-shrink-0 self-center p-1 rounded hover:bg-destructive/10"
+                          title="Delete conversation"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   </motion.li>
@@ -287,48 +312,59 @@ export default function InboxPage() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col bg-background relative">
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: `url("https://www.transparenttextures.com/patterns/cubes.png")` }}></div>
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col bg-background relative min-w-0">
         
         {activeContactId && activeConversation ? (
           <>
-            <div className="px-5 py-3 border-b border-border bg-card flex items-center justify-between z-20 sticky top-0 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-[0.35rem] flex items-center justify-center font-bold text-xs shadow-md ${getAvatarColor(activeConversation.name && activeConversation.name !== "Unknown" ? activeConversation.name : `+${activeConversation.phoneNumber}`)}`}>
+            {/* Chat Header */}
+            <div className="px-5 py-3 border-b border-border bg-card flex items-center justify-between z-20 sticky top-0 shadow-sm flex-shrink-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-sm bg-gradient-to-br from-primary/30 to-primary/10 text-primary border border-primary/20 shadow-sm">
                   {getInitials(activeConversation.name !== "Unknown" ? activeConversation.name : activeConversation.phoneNumber.replace('@lid', ''))}
                 </div>
-                <div>
-                  <h3 className="font-extrabold text-foreground text-base tracking-tight">{activeConversation.name && activeConversation.name !== "Unknown" ? activeConversation.name : `+${activeConversation.phoneNumber.replace('@lid', '')}`}</h3>
-                  <p className="text-[11px] font-mono text-muted-foreground">{activeConversation.phoneNumber}</p>
+                <div className="min-w-0">
+                  <h3 className="font-extrabold text-foreground text-base tracking-tight truncate">
+                    {activeConversation.name && activeConversation.name !== "Unknown" ? activeConversation.name : `+${activeConversation.phoneNumber.replace('@lid', '')}`}
+                  </h3>
+                  <p className="text-[11px] font-mono text-muted-foreground truncate">{activeConversation.phoneNumber}</p>
                 </div>
               </div>
-              <div className={`flex items-center gap-3 px-3 py-1.5 rounded-full border transition-all ${activeConversation.aiEnabled ?? true ? 'bg-emerald-500/10 border-emerald-500/20 shadow-sm' : 'bg-secondary border-border'}`}>
-                <div className="flex flex-col items-end">
-                  <span className={`text-[13px] font-extrabold flex items-center gap-1.5 ${activeConversation.aiEnabled ?? true ? 'text-emerald-700 dark:text-emerald-400' : 'text-muted-foreground'}`}>
-                    <Bot className={`w-4 h-4 ${activeConversation.aiEnabled ?? true ? 'animate-pulse' : ''}`} /> 
+              
+              {/* AI Toggle - Default OFF */}
+              <div className={`flex items-center gap-2.5 px-3 py-1.5 rounded-full border transition-all flex-shrink-0 ${aiEnabledForContact ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-secondary border-border'}`}>
+                <Bot className={`w-4 h-4 ${aiEnabledForContact ? 'text-emerald-500 animate-pulse' : 'text-muted-foreground'}`} />
+                <div className="flex flex-col items-start">
+                  <span className={`text-[11px] font-bold leading-none ${aiEnabledForContact ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
                     AI Auto-Reply
                   </span>
-                  <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
-                    {activeConversation.aiEnabled ?? true ? 'Active' : 'Disabled'}
+                  <span className="text-[9px] text-muted-foreground/70 font-medium">
+                    {aiEnabledForContact ? 'ON' : 'OFF'}
                   </span>
                 </div>
                 <Switch 
-                  checked={activeConversation.aiEnabled ?? true} 
+                  checked={aiEnabledForContact} 
                   onCheckedChange={toggleAiEnabled} 
                   disabled={togglingAi}
-                  className={activeConversation.aiEnabled ?? true ? 'data-[state=checked]:bg-emerald-500' : ''}
+                  className={aiEnabledForContact ? 'data-[state=checked]:bg-emerald-500' : ''}
                 />
               </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 z-10">
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 z-10">
+              {messages.length === 0 && (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <p className="text-sm">No messages yet in this conversation</p>
+                </div>
+              )}
               {messages.map((msg: any) => {
                 const isOutbound = msg.direction === "outbound";
                 return (
                   <div key={msg.id} className={`flex ${isOutbound ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[75%] p-4 rounded-[0.35rem] shadow-sm relative group ${isOutbound ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground border border-border'}`}>
+                    <div className={`max-w-[70%] px-4 py-2.5 rounded-2xl shadow-sm relative group ${isOutbound ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-secondary text-secondary-foreground border border-border rounded-bl-sm'}`}>
                       {msg.senderName && msg.senderName !== "Unknown" && !isOutbound && (
-                        <span className={`text-xs font-bold block mb-1 text-muted-foreground`}>
+                        <span className="text-[11px] font-bold block mb-1 text-muted-foreground">
                           ~{msg.senderName}
                         </span>
                       )}
@@ -345,38 +381,39 @@ export default function InboxPage() {
                       )}
                       <p className="text-sm leading-relaxed break-words">{msg.content}</p>
                       
-                      <div className={`absolute top-2 opacity-0 group-hover:opacity-100 transition-opacity ${isOutbound ? "-left-10" : "-right-10"}`}>
+                      {/* Message actions */}
+                      <div className={`absolute top-1 opacity-0 group-hover:opacity-100 transition-opacity ${isOutbound ? "-left-10" : "-right-10"}`}>
                         <DropdownMenu>
-                          <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 rounded-[0.25rem] bg-secondary shadow-md hover:bg-secondary/80 text-foreground focus:outline-none transition-transform hover:scale-105 border border-border">
-                            <ChevronDown className="h-4 w-4" />
+                          <DropdownMenuTrigger className="inline-flex items-center justify-center h-7 w-7 rounded-full bg-card shadow-md hover:bg-secondary text-foreground focus:outline-none transition-all border border-border">
+                            <ChevronDown className="h-3.5 w-3.5" />
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align={isOutbound ? "end" : "start"} className="rounded-[0.25rem] shadow-xl border-border bg-card">
-                            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(msg.content)} className="cursor-pointer font-bold text-foreground">
-                              <span className="text-xs">Copy</span>
+                            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(msg.content)} className="cursor-pointer font-bold text-foreground text-xs">
+                              Copy
                             </DropdownMenuItem>
                             {isOutbound && (
-                              <DropdownMenuItem onClick={() => setEvaluatingMessageId(msg.id)} className="cursor-pointer font-bold text-foreground focus:bg-primary/10 focus:text-primary">
-                                <Bot className="h-4 w-4 mr-2" /> Evaluate AI
+                              <DropdownMenuItem onClick={() => setEvaluatingMessageId(msg.id)} className="cursor-pointer font-bold text-foreground focus:bg-primary/10 focus:text-primary text-xs">
+                                <Bot className="h-3.5 w-3.5 mr-2" /> Evaluate AI
                               </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem onClick={() => deleteMessage(msg.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer font-bold">
-                              <Trash2 className="h-4 w-4 mr-2" /> Delete
+                            <DropdownMenuItem onClick={() => deleteMessage(msg.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer font-bold text-xs">
+                              <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
 
-                      <div className={`text-[10px] mt-1.5 flex justify-end items-center gap-1 font-bold ${isOutbound ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                      <div className={`text-[10px] mt-1 flex justify-end items-center gap-1 font-medium ${isOutbound ? "text-primary-foreground/60" : "text-muted-foreground/70"}`}>
                         {new Date(msg.createdAt).toLocaleDateString() === new Date().toLocaleDateString() 
                           ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                           : new Date(msg.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         {isOutbound && (
                           <span className="ml-0.5">
-                            {msg.status === 'queued' && <Clock className="w-3 h-3 opacity-80" />}
+                            {msg.status === 'queued' && <Clock className="w-3 h-3 opacity-60" />}
                             {msg.status === 'sent' && <Check className="w-3 h-3 opacity-80" />}
                             {msg.status === 'delivered' && <CheckCheck className="w-3 h-3 opacity-80" />}
-                            {msg.status === 'read' && <CheckCheck className="w-3 h-3 text-blue-700 font-extrabold shadow-sm" />}
-                            {msg.status === 'failed' && <span className="text-destructive">Failed</span>}
+                            {msg.status === 'read' && <CheckCheck className="w-3 h-3 text-blue-300 font-extrabold" />}
+                            {msg.status === 'failed' && <span className="text-red-300 text-[9px]">Failed</span>}
                           </span>
                         )}
                       </div>
@@ -387,86 +424,101 @@ export default function InboxPage() {
               <div ref={messagesEndRef} />
             </div>
 
-            <div className="p-4 bg-card border-t border-border z-20 sticky bottom-0">
+            {/* Send Message Bar */}
+            <div className="p-3 bg-card border-t border-border z-20 flex-shrink-0">
+              {/* Error Banner */}
+              {sendError && (
+                <div className="mb-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-2 text-xs text-red-500">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span className="flex-1">{sendError}</span>
+                  <button onClick={() => setSendError(null)} className="text-red-400 hover:text-red-500 ml-1"><X className="w-3.5 h-3.5" /></button>
+                </div>
+              )}
+              {/* No Device Warning */}
+              {!hasConnectedDevice && (
+                <div className="mb-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
+                  <WifiOff className="w-4 h-4 flex-shrink-0" />
+                  No WhatsApp device connected. Go to <strong className="mx-1">Devices</strong> to connect first.
+                </div>
+              )}
               {attachment && (
-                <div className="mb-3 p-3 bg-secondary rounded-[0.35rem] shadow-sm flex items-center justify-between max-w-sm mx-auto animate-in slide-in-from-bottom-2">
-                  <div className="flex items-center gap-3 overflow-hidden">
+                <div className="mb-2 p-2 bg-secondary rounded-lg flex items-center justify-between max-w-sm animate-in slide-in-from-bottom-2">
+                  <div className="flex items-center gap-2 overflow-hidden">
                     {attachment.type.startsWith('image/') ? (
-                      <div className="w-10 h-10 rounded-[0.25rem] bg-muted overflow-hidden flex-shrink-0">
+                      <div className="w-8 h-8 rounded bg-muted overflow-hidden flex-shrink-0">
                         <img src={URL.createObjectURL(attachment)} alt="Preview" className="w-full h-full object-cover" />
                       </div>
                     ) : (
-                      <div className="w-10 h-10 rounded-[0.25rem] bg-primary/20 text-primary flex items-center justify-center flex-shrink-0">
-                        <Paperclip className="w-5 h-5" />
+                      <div className="w-8 h-8 rounded bg-primary/20 text-primary flex items-center justify-center flex-shrink-0">
+                        <Paperclip className="w-4 h-4" />
                       </div>
                     )}
-                    <span className="text-sm font-bold text-foreground truncate">{attachment.name}</span>
+                    <span className="text-xs font-bold text-foreground truncate">{attachment.name}</span>
                   </div>
-                  <button type="button" onClick={() => setAttachment(null)} className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-[0.25rem] transition-colors">
-                    <X className="w-4 h-4" />
+                  <button type="button" onClick={() => setAttachment(null)} className="p-1 text-muted-foreground hover:text-destructive rounded transition-colors">
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               )}
-              <form onSubmit={handleSendMessage} className="flex flex-col gap-2 max-w-4xl mx-auto">
-                {!hasConnectedDevice && (
-                  <div className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 rounded-md text-xs font-medium mb-1">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                    You must connect a WhatsApp device in the Devices menu before you can send messages.
-                  </div>
-                )}
-                <div className="flex gap-3 items-end w-full">
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    className="hidden" 
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files.length > 0) {
-                        setAttachment(e.target.files[0]);
-                      }
-                    }}
-                    disabled={!hasConnectedDevice}
-                  />
-                  <button 
-                    type="button" 
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={!hasConnectedDevice}
-                    className="h-11 w-11 flex-shrink-0 rounded-[0.35rem] bg-secondary hover:bg-secondary/80 text-foreground shadow-sm border border-border flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Paperclip className="w-5 h-5" />
-                  </button>
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder={hasConnectedDevice ? "Type a message..." : "Connect a device to chat"}
-                    disabled={!hasConnectedDevice}
-                    className="flex-1 h-11 bg-background focus:bg-background rounded-[0.35rem] px-4 shadow-sm border border-border focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-foreground placeholder-muted-foreground disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-secondary/50"
-                  />
-                  <button 
-                    type="submit"
-                    disabled={!hasConnectedDevice || (!newMessage.trim() && !attachment)}
-                    className="h-11 w-11 flex-shrink-0 rounded-[0.35rem] bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Send className="w-5 h-5 ml-1" />
-                  </button>
-                </div>
+              <form onSubmit={handleSendMessage} className="flex items-end gap-2">
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  className="hidden" 
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                      setAttachment(e.target.files[0]);
+                    }
+                  }}
+                  disabled={!hasConnectedDevice}
+                />
+                <button 
+                  type="button" 
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={!hasConnectedDevice}
+                  className="h-10 w-10 flex-shrink-0 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground border border-border flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <Paperclip className="w-4 h-4" />
+                </button>
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  placeholder={hasConnectedDevice ? "Type a message..." : "Connect a device to chat"}
+                  disabled={!hasConnectedDevice || sendingMsg}
+                  className="flex-1 h-10 bg-background rounded-xl px-4 border border-border focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all text-sm text-foreground placeholder-muted-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <button 
+                  type="submit"
+                  disabled={!hasConnectedDevice || (!newMessage.trim() && !attachment) || sendingMsg}
+                  className="h-10 w-10 flex-shrink-0 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+                >
+                  {sendingMsg ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                </button>
               </form>
             </div>
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground z-10">
-            <div className="w-24 h-24 bg-secondary rounded-[0.35rem] flex items-center justify-center mb-6 shadow-sm border border-border">
-              <User className="w-10 h-10 text-muted-foreground" />
+          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground z-10 p-8">
+            <div className="w-20 h-20 bg-secondary rounded-full flex items-center justify-center mb-5 shadow-sm border border-border">
+              <MessageSquarePlus className="w-9 h-9 text-muted-foreground/50" />
             </div>
-            <p className="font-bold text-muted-foreground tracking-tight uppercase tracking-widest text-sm">Select a conversation to start chatting</p>
-            <Button onClick={() => setShowNewChat(true)} className="mt-6 rounded-[0.35rem] bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm font-bold px-6">
-              <MessageSquarePlus className="w-5 h-5 mr-2" /> Start New Chat
+            <h3 className="font-bold text-foreground text-base mb-1">Select a conversation</h3>
+            <p className="text-sm text-muted-foreground text-center max-w-xs">Choose an existing conversation from the left or start a new one</p>
+            <Button onClick={() => setShowNewChat(true)} className="mt-5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm font-bold px-6 h-10">
+              <MessageSquarePlus className="w-4 h-4 mr-2" /> New Chat
             </Button>
+            {!hasConnectedDevice && (
+              <div className="mt-4 px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400 max-w-xs">
+                <WifiOff className="w-4 h-4 flex-shrink-0" />
+                No WhatsApp device connected. Go to Devices to connect first.
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* New Chat Modal Overlay */}
+      {/* New Chat Modal */}
       <AnimatePresence>
       {showNewChat && (
         <motion.div 
@@ -479,46 +531,58 @@ export default function InboxPage() {
             initial={{ scale: 0.95, opacity: 0, y: 10 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 10 }}
-            className="bg-card rounded-[0.35rem] w-full max-w-md shadow-2xl overflow-hidden border border-border"
+            className="bg-card rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-border"
           >
-            <div className="p-5 border-b border-border flex justify-between items-center bg-card">
-              <h3 className="font-extrabold text-lg text-foreground tracking-tight">New Message</h3>
-              <Button variant="ghost" size="icon" onClick={() => setShowNewChat(false)} className="rounded-[0.25rem] hover:bg-secondary text-muted-foreground hover:text-foreground">
-                <X className="w-5 h-5" />
+            <div className="p-5 border-b border-border flex justify-between items-center">
+              <div>
+                <h3 className="font-extrabold text-lg text-foreground">New Message</h3>
+                {!hasConnectedDevice && (
+                  <p className="text-xs text-amber-500 font-medium flex items-center gap-1 mt-0.5">
+                    <WifiOff className="w-3 h-3" /> No device connected
+                  </p>
+                )}
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setShowNewChat(false)} className="rounded-xl hover:bg-secondary text-muted-foreground hover:text-foreground h-8 w-8">
+                <X className="w-4 h-4" />
               </Button>
             </div>
-            <form onSubmit={startNewChat} className="p-6 space-y-5">
+            <form onSubmit={startNewChat} className="p-5 space-y-4">
               <div>
-                <label className="block text-sm font-bold text-foreground mb-2">WhatsApp Number or Select Contact</label>
+                <label className="block text-sm font-bold text-foreground mb-1.5">
+                  <Phone className="w-3.5 h-3.5 inline mr-1" />
+                  WhatsApp Number
+                </label>
                 <Input 
                   list="all-contacts"
-                  placeholder="e.g. 628123456789 or type name..." 
+                  placeholder="e.g. 628123456789" 
                   value={newPhone}
                   onChange={(e) => setNewPhone(e.target.value)}
-                  className="w-full bg-background border-border focus-visible:ring-primary shadow-sm rounded-[0.25rem] text-foreground"
+                  className="w-full bg-background border-border focus-visible:ring-primary rounded-xl text-foreground"
                 />
                 <datalist id="all-contacts">
                   {allContacts.map(c => (
                     <option key={c.id} value={c.phoneNumber}>{c.name || c.phoneNumber}</option>
                   ))}
                 </datalist>
-                <p className="text-[11px] font-bold text-muted-foreground mt-1.5 ml-1">Select from contacts or enter new number (with country code, no '+')</p>
+                <p className="text-[11px] text-muted-foreground mt-1 ml-1">With country code, no '+' (e.g. 628123456789)</p>
               </div>
               <div>
-                <label className="block text-sm font-bold text-foreground mb-2">Message</label>
+                <label className="block text-sm font-bold text-foreground mb-1.5">Message</label>
                 <textarea 
-                  className="w-full h-28 border border-border rounded-[0.25rem] p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground shadow-sm resize-none"
-                  placeholder="Type your message here..."
+                  className="w-full h-24 border border-border rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground resize-none"
+                  placeholder="Type your message..."
                   value={newMsg}
                   onChange={(e) => setNewMsg(e.target.value)}
                 />
               </div>
-              <div className="pt-2">
-                <Button type="submit" disabled={sendingNew || !newPhone.trim() || !newMsg.trim()} className="w-full rounded-[0.35rem] bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm font-bold h-11">
-                  {sendingNew ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Send className="w-5 h-5 mr-2" />}
-                  Send Message
-                </Button>
-              </div>
+              <Button 
+                type="submit" 
+                disabled={sendingNew || !newPhone.trim() || !newMsg.trim() || !hasConnectedDevice} 
+                className="w-full rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-10"
+              >
+                {sendingNew ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
+                {!hasConnectedDevice ? "No Device Connected" : "Send Message"}
+              </Button>
             </form>
           </motion.div>
         </motion.div>
@@ -531,27 +595,27 @@ export default function InboxPage() {
           <DialogHeader>
             <DialogTitle>Evaluate AI Response</DialogTitle>
             <DialogDescription>
-              Select the device/integration to use for evaluating this message. The AI will analyze the conversation leading up to this point and provide a score.
+              Select the device to use for evaluating this message.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             {devices.length === 0 ? (
               <div className="p-3 text-sm text-muted-foreground flex items-start gap-2 bg-secondary/30 rounded-md">
                 <AlertCircle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
-                <p>No devices found. Please configure a device in the dashboard first.</p>
+                <p>No devices found.</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {devices.map(d => (
                   <Button 
                     key={d.id} 
                     variant="outline" 
-                    className="w-full justify-start h-auto py-3 px-4"
+                    className="w-full justify-start h-auto py-3 px-4 rounded-xl"
                     onClick={() => handleEvaluate(d.id)}
                     disabled={evaluating}
                   >
-                    <div className="flex flex-col items-start gap-1 text-left">
-                      <span className="font-bold">{d.name}</span>
+                    <div className="flex flex-col items-start gap-0.5 text-left">
+                      <span className="font-bold text-sm">{d.name}</span>
                       <span className="text-xs text-muted-foreground">{d.phoneNumber}</span>
                     </div>
                   </Button>

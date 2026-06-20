@@ -4,6 +4,8 @@ import { auth } from "@/auth";
 import fs from "fs";
 import path from "path";
 
+const WORKER_URL = process.env.WORKER_URL || "http://127.0.0.1:4010";
+
 export async function GET(req: Request) {
   try {
     const session = await auth();
@@ -17,7 +19,7 @@ export async function GET(req: Request) {
       include: {
         messages: {
           orderBy: { createdAt: 'desc' },
-          take: 50 // Fetch last 50 messages per contact
+          take: 50
         }
       }
     });
@@ -34,99 +36,118 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-    try {
-      const session = await auth();
-      if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      
-      const tenantId = (session as any).tenantId;
-      
-      const contentType = req.headers.get('content-type') || '';
-      let contactId: string;
-      let content: string;
-      let mediaUrl: string | null = null;
-      let mediaType: string | null = null;
+  try {
+    const session = await auth();
+    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    
+    const tenantId = (session as any).tenantId;
+    
+    const contentType = req.headers.get('content-type') || '';
+    let contactId: string;
+    let content: string;
+    let mediaUrl: string | null = null;
+    let mediaType: string | null = null;
 
-      if (contentType.includes('multipart/form-data')) {
-        const formData = await req.formData();
-        contactId = formData.get('contactId') as string;
-        content = (formData.get('content') as string) || '';
-        const file = formData.get('file') as File | null;
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await req.formData();
+      contactId = formData.get('contactId') as string;
+      content = (formData.get('content') as string) || '';
+      const file = formData.get('file') as File | null;
 
-        if (file) {
-          const bytes = await file.arrayBuffer();
-          const buffer = Buffer.from(bytes);
-          
-          const uploadsDir = path.join(process.cwd(), "public", "uploads");
-          if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-          
-          const ext = file.name.split('.').pop();
-          const filename = `upload_${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
-          
-          await fs.promises.writeFile(path.join(uploadsDir, filename), buffer);
-          mediaUrl = `/uploads/${filename}`;
-          
-          if (file.type.startsWith('image/')) mediaType = 'image';
-          else if (file.type.startsWith('video/')) mediaType = 'video';
-          else if (file.type.startsWith('audio/')) mediaType = 'audio';
-          else mediaType = 'document';
-        }
-      } else {
-        const body = await req.json();
-        contactId = body.contactId;
-        content = body.content || '';
+      if (file) {
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        
+        const uploadsDir = path.join(process.cwd(), "public", "uploads");
+        if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+        
+        const ext = file.name.split('.').pop();
+        const filename = `upload_${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
+        
+        await fs.promises.writeFile(path.join(uploadsDir, filename), buffer);
+        mediaUrl = `/uploads/${filename}`;
+        
+        if (file.type.startsWith('image/')) mediaType = 'image';
+        else if (file.type.startsWith('video/')) mediaType = 'video';
+        else if (file.type.startsWith('audio/')) mediaType = 'audio';
+        else mediaType = 'document';
       }
-  
-      if (!contactId || (!content && !mediaUrl)) {
-        return NextResponse.json({ error: "Missing fields" }, { status: 400 });
-      }
-
-      const contact = await prisma.contact.findUnique({ where: { id: contactId }});
-      if (!contact) return NextResponse.json({ error: "Contact not found" }, { status: 404 });
-  
-      // Verify if there is a connected device
-      const connectedDevice = await prisma.device.findFirst({
-        where: { tenantId, status: "connect" }
-      });
-      if (!connectedDevice) {
-        return NextResponse.json({ error: "No connected device found. Please connect your WhatsApp device first." }, { status: 400 });
-      }
-  
-      let wamid = `mock-wa-id-${Date.now()}`;
-      try {
-        console.log(`[NextJS] Sending POST to http://127.0.0.1:4010/send for tenant ${tenantId} to ${contact.phoneNumber}`);
-        const res = await fetch((process.env.WORKER_URL || "http://127.0.0.1:4010") + "/send", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tenantId, phoneNumber: contact.phoneNumber, content, mediaUrl, mediaType })
-        });
-        const resData = await res.json();
-        console.log(`[NextJS] Worker /send response:`, res.status, resData);
-        if (res.status === 200 && resData.success && resData.data?.key?.id) {
-          wamid = resData.data.key.id;
-        } else {
-          throw new Error(resData.error || "Worker failed to send message");
-        }
-      } catch (e: any) {
-        console.error("[NextJS] Failed to send message via worker", e);
-        return NextResponse.json({ error: e.message || "Failed to send message via WhatsApp worker" }, { status: 500 });
-      }
-
-      const message = await prisma.message.create({
-        data: {
-          tenantId,
-          contactId,
-          content,
-          mediaUrl,
-          mediaType,
-          status: "sent",
-          direction: "outbound",
-          whatsappId: wamid
-        }
-      });
-  
-      return NextResponse.json({ success: true, message });
-    } catch (error) {
-      console.error(error);
-      return NextResponse.json({ error: "Server error" }, { status: 500 });
+    } else {
+      const body = await req.json();
+      contactId = body.contactId;
+      content = body.content || '';
     }
+
+    if (!contactId! || (!content && !mediaUrl)) {
+      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    }
+
+    const contact = await prisma.contact.findUnique({ where: { id: contactId! }});
+    if (!contact) return NextResponse.json({ error: "Contact not found" }, { status: 404 });
+
+    // Verify if there is a connected device
+    const connectedDevice = await prisma.device.findFirst({
+      where: { tenantId, status: "connect" }
+    });
+    if (!connectedDevice) {
+      return NextResponse.json({ 
+        error: "No connected device found. Please connect your WhatsApp device first." 
+      }, { status: 400 });
+    }
+
+    // Try to send via worker
+    let wamid = `msg-${Date.now()}`;
+    let sendStatus = "queued";
+    
+    try {
+      console.log(`[Inbox POST] Sending to worker at ${WORKER_URL}/send`);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+      
+      const res = await fetch(`${WORKER_URL}/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenantId, phoneNumber: contact.phoneNumber, content, mediaUrl, mediaType }),
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
+      
+      const resData = await res.json();
+      console.log(`[Inbox POST] Worker response:`, res.status, resData);
+      
+      if (res.ok && resData.success) {
+        wamid = resData.data?.key?.id || wamid;
+        sendStatus = "sent";
+      } else {
+        throw new Error(resData.error || "Worker returned error");
+      }
+    } catch (e: any) {
+      console.error("[Inbox POST] Worker send failed:", e.message);
+      // Don't fail the request - save message as queued, worker will retry
+      // Return error so UI can show the actual error
+      return NextResponse.json({ 
+        error: e.name === 'AbortError' 
+          ? "WhatsApp service timeout - worker may be starting up, please try again" 
+          : `Failed to send: ${e.message}` 
+      }, { status: 500 });
+    }
+
+    const message = await prisma.message.create({
+      data: {
+        tenantId,
+        contactId: contactId!,
+        content,
+        mediaUrl,
+        mediaType,
+        status: sendStatus,
+        direction: "outbound",
+        whatsappId: wamid
+      }
+    });
+
+    return NextResponse.json({ success: true, message });
+  } catch (error: any) {
+    console.error(error);
+    return NextResponse.json({ error: error.message || "Server error" }, { status: 500 });
   }
+}
