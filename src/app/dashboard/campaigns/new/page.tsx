@@ -166,14 +166,14 @@ export default function NewCampaignPage() {
           <button 
             type="button"
             onClick={() => setMode("standard")}
-            className={`flex-1 py-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${mode === "standard" ? "bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white border-b-2 border-green-500" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50"}`}
+            className={`flex-1 py-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${mode === "standard" ? "bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white border-b-2 border-primary" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50"}`}
           >
             <ListChecks className="w-4 h-4" /> Standard Broadcast
           </button>
           <button 
             type="button"
             onClick={() => setMode("excel")}
-            className={`flex-1 py-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${mode === "excel" ? "bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white border-b-2 border-green-500" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50"}`}
+            className={`flex-1 py-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${mode === "excel" ? "bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white border-b-2 border-primary" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50"}`}
           >
             <FileSpreadsheet className="w-4 h-4" /> Import Excel
           </button>
@@ -194,7 +194,7 @@ export default function NewCampaignPage() {
                 placeholder="e.g., Promo Akhir Tahun 2026" 
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus-visible:ring-green-600"
+                className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus-visible:ring-primary"
               />
             </div>
 
@@ -206,7 +206,7 @@ export default function NewCampaignPage() {
                     placeholder="e.g., VIP, promo (leave blank to send to all contacts)" 
                     value={targetTags}
                     onChange={(e) => setTargetTags(e.target.value)}
-                    className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus-visible:ring-green-600"
+                    className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus-visible:ring-primary"
                   />
                   <p className="text-xs text-slate-500">Matches contacts containing this tag. Leave empty to target everyone.</p>
                 </div>
@@ -220,7 +220,7 @@ export default function NewCampaignPage() {
                       type="datetime-local"
                       value={scheduledAt}
                       onChange={(e) => setScheduledAt(e.target.value)}
-                      className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus-visible:ring-green-600 dark:[color-scheme:dark]"
+                      className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus-visible:ring-primary dark:[color-scheme:dark]"
                     />
                     <p className="text-xs text-slate-500">Leave blank to send immediately.</p>
                   </div>
@@ -232,7 +232,7 @@ export default function NewCampaignPage() {
                     <Input 
                       type="file"
                       onChange={(e) => setFile(e.target.files?.[0] || null)}
-                      className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 file:text-slate-700 dark:file:text-slate-300 file:bg-slate-100 dark:file:bg-slate-800 focus-visible:ring-green-600 cursor-pointer"
+                      className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 file:text-slate-700 dark:file:text-slate-300 file:bg-slate-100 dark:file:bg-slate-800 focus-visible:ring-primary cursor-pointer"
                     />
                     <p className="text-xs text-slate-500">Image, Video, or PDF.</p>
                   </div>
@@ -249,7 +249,7 @@ export default function NewCampaignPage() {
                     placeholder="Write your message here..." 
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
-                    className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus-visible:ring-green-600 resize-none font-mono text-sm leading-relaxed"
+                    className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus-visible:ring-primary resize-none font-mono text-sm leading-relaxed"
                   />
                 </div>
               </>
@@ -257,7 +257,7 @@ export default function NewCampaignPage() {
               <div className="space-y-6">
                 <div className="p-6 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-900/50 flex flex-col items-center justify-center text-center space-y-4">
                   <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
-                    <Upload className="w-6 h-6 text-green-600 dark:text-green-500" />
+                    <Upload className="w-6 h-6 text-primary" />
                   </div>
                   <div>
                     <h3 className="text-slate-900 dark:text-slate-200 font-medium">Upload Excel File</h3>
@@ -276,7 +276,7 @@ export default function NewCampaignPage() {
 
                 <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-800">
                   <div className="flex items-center gap-3">
-                    <FileSpreadsheet className="w-8 h-8 text-green-600 dark:text-green-500" />
+                    <FileSpreadsheet className="w-8 h-8 text-primary" />
                     <div>
                       <h4 className="text-slate-900 dark:text-slate-200 text-sm font-medium">Download Template</h4>
                       <p className="text-slate-500 text-xs">Use our required columns structure</p>
@@ -328,7 +328,7 @@ export default function NewCampaignPage() {
               <Button 
                 type="submit" 
                 disabled={loading || uploading || (mode === "excel" && excelData.length === 0)} 
-                className="w-full h-12 text-base font-medium bg-green-600 hover:bg-green-700 text-white shadow-[0_0_20px_rgba(22,163,74,0.15)] transition-all hover:shadow-[0_0_25px_rgba(22,163,74,0.25)] hover:-translate-y-0.5"
+                className="w-full h-12 text-base font-medium bg-primary hover:bg-primary/90 text-primary-foreground shadow-md transition-all hover:shadow-lg hover:-translate-y-0.5"
               >
                 {loading || uploading ? (
                   <>
