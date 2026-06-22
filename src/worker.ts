@@ -206,10 +206,57 @@ async function startCampaignPoller() {
   }, 5000); // Poll every 5 seconds
 }
 
+// Auto-cleanup duplicate contacts caused by @lid
+async function cleanupDuplicateContacts() {
+  try {
+    const contacts = await prisma.contact.findMany({
+      where: { 
+        OR: [
+          { phoneNumber: { contains: "@lid" } },
+          { phoneNumber: { contains: "@s.whatsapp.net" } },
+          { phoneNumber: { contains: "@g.us" } }
+        ]
+      }
+    });
+    
+    let cleaned = 0;
+    for (const c of contacts) {
+      // Don't modify group IDs
+      if (c.phoneNumber.includes("@g.us")) continue;
+      
+      const bareNumber = c.phoneNumber.split("@")[0];
+      const primaryContact = await prisma.contact.findFirst({
+        where: { tenantId: c.tenantId, phoneNumber: bareNumber }
+      });
+      
+      if (primaryContact && primaryContact.id !== c.id) {
+        await prisma.message.updateMany({
+          where: { contactId: c.id },
+          data: { contactId: primaryContact.id }
+        });
+        await prisma.contact.delete({ where: { id: c.id } });
+        cleaned++;
+      } else {
+        // If no primary exists, just strip the @lid so it's clean
+        await prisma.contact.update({
+          where: { id: c.id },
+          data: { phoneNumber: bareNumber }
+        });
+        cleaned++;
+      }
+    }
+    if (cleaned > 0) console.log(`🧹 Cleaned up ${cleaned} duplicate @lid contacts.`);
+  } catch (e: any) {
+    console.error("[Cleanup Error]", e.message);
+  }
+}
+
 // Startup
 async function startup() {
   console.log("🚀 Weaweb Worker (No-Redis) starting on port 4000...");
   
+  await cleanupDuplicateContacts();
+
   app.listen(4010, "0.0.0.0", () => {
     console.log("✅ Worker HTTP API listening on http://0.0.0.0:4010");
   });
