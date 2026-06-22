@@ -135,7 +135,7 @@ async function startCampaignPoller() {
         console.log(`[Poller] Processing campaign message for contact: ${msg.contact.phoneNumber}`);
         let wamid = `wa-mock-${Date.now()}`;
         
-        let finalContent = msg.campaign.content;
+        let finalContent = msg.customContent || msg.campaign.content;
         if (msg.contact.name) {
           finalContent = finalContent.replace(/{{name}}/g, msg.contact.name);
         }
@@ -164,7 +164,7 @@ async function startCampaignPoller() {
             data: {
               tenantId: tenant.id,
               contactId: msg.contactId,
-              content: msg.campaign.content,
+              content: finalContent,
               status: "sent",
               direction: "outbound",
               whatsappId: wamid,

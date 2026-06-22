@@ -16,69 +16,131 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, content, targetTags, scheduledAt, mediaUrl, mediaType } = body;
+    const { name, content, targetTags, scheduledAt, mediaUrl, mediaType, mode, excelRows } = body;
 
-    if (!name || !content) {
-      return NextResponse.json({ error: "Name and content are required" }, { status: 400 });
+    if (!name) {
+      return NextResponse.json({ error: "Campaign name is required" }, { status: 400 });
     }
 
-    // 1. Fetch matching contacts
-    // If targetTags is provided, filter by tag. Otherwise, select all contacts.
-    let contacts = [];
-    if (targetTags && targetTags.trim() !== "") {
-        contacts = await prisma.contact.findMany({
-            where: { 
-                tenantId,
-                tags: { contains: targetTags }
-            }
-        });
-    } else {
-        contacts = await prisma.contact.findMany({
-            where: { tenantId }
-        });
-    }
+    if (mode === "excel") {
+      if (!excelRows || excelRows.length === 0) {
+        return NextResponse.json({ error: "Excel rows are required for Excel mode" }, { status: 400 });
+      }
 
-    if (contacts.length === 0) {
-        return NextResponse.json({ error: "No contacts found matching the criteria" }, { status: 400 });
-    }
-
-    // 2. Create Campaign
-    const campaign = await prisma.campaign.create({
+      // Create Campaign (without content since each has custom content)
+      const campaign = await prisma.campaign.create({
         data: {
-            tenantId,
-            name,
-            content,
-            targetTags,
-            status: "pending",
-            scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
-            mediaUrl,
-            mediaType
+          tenantId,
+          name,
+          content: "Excel Import Campaign", // Fallback
+          status: "pending",
         }
-    });
+      });
 
-    // 3. Create CampaignMessages and Enqueue
-    // In a real production app with millions of contacts, this should be done in batches
-    // For MVP, we can insert and enqueue directly
-    const campaignMessagesData = contacts.map(c => ({
-        campaignId: campaign.id,
-        contactId: c.id,
-        status: "pending",
-        scheduledAt: scheduledAt ? new Date(scheduledAt) : null
-    }));
+      const createdMessages = [];
+      for (const row of excelRows) {
+        let phoneNumber = row.Phone.trim();
+        if (phoneNumber.startsWith("0")) {
+          phoneNumber = "62" + phoneNumber.substring(1);
+        } else if (phoneNumber.startsWith("+")) {
+          phoneNumber = phoneNumber.substring(1);
+        }
 
-    // Prisma doesn't return created IDs from createMany in SQLite easily, 
-    // so we create them in a transaction individually or use a loop
-    const createdMessages = [];
-    for (const data of campaignMessagesData) {
-        const cm = await prisma.campaignMessage.create({ data });
+        // Upsert contact
+        const contact = await prisma.contact.upsert({
+          where: { tenantId_phoneNumber: { tenantId, phoneNumber } },
+          update: { name: row.Name },
+          create: { tenantId, phoneNumber, name: row.Name }
+        });
+
+        // Parse Date & Time to Date object
+        let parsedScheduledAt = null;
+        if (row.Date && row.Time) {
+           const dateTimeStr = `${row.Date}T${row.Time}`;
+           const parsed = new Date(dateTimeStr);
+           if (!isNaN(parsed.getTime())) {
+             parsedScheduledAt = parsed;
+           }
+        }
+
+        // Create CampaignMessage
+        const cm = await prisma.campaignMessage.create({
+          data: {
+            campaignId: campaign.id,
+            contactId: contact.id,
+            status: "pending",
+            customContent: row.Message,
+            scheduledAt: parsedScheduledAt
+          }
+        });
         createdMessages.push(cm);
-    }
+      }
 
-    return NextResponse.json({ 
-        success: true, 
-        campaign, 
-        messagesQueued: createdMessages.length 
-    });
+      return NextResponse.json({ 
+          success: true, 
+          campaign, 
+          messagesQueued: createdMessages.length 
+      });
+
+    } else {
+      // Standard Mode
+      if (!content) {
+        return NextResponse.json({ error: "Content is required for standard campaign" }, { status: 400 });
+      }
+
+      // 1. Fetch matching contacts
+      let contacts = [];
+      if (targetTags && targetTags.trim() !== "") {
+          contacts = await prisma.contact.findMany({
+              where: { 
+                  tenantId,
+                  tags: { contains: targetTags }
+              }
+          });
+      } else {
+          contacts = await prisma.contact.findMany({
+              where: { tenantId }
+          });
+      }
+
+      if (contacts.length === 0) {
+          return NextResponse.json({ error: "No contacts found matching the criteria" }, { status: 400 });
+      }
+
+      // 2. Create Campaign
+      const campaign = await prisma.campaign.create({
+          data: {
+              tenantId,
+              name,
+              content,
+              targetTags,
+              status: "pending",
+              scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
+              mediaUrl,
+              mediaType
+          }
+      });
+
+      // 3. Create CampaignMessages and Enqueue
+      const campaignMessagesData = contacts.map(c => ({
+          campaignId: campaign.id,
+          contactId: c.id,
+          status: "pending",
+          scheduledAt: scheduledAt ? new Date(scheduledAt) : null
+      }));
+
+      const createdMessages = [];
+      for (const data of campaignMessagesData) {
+          const cm = await prisma.campaignMessage.create({ data });
+          createdMessages.push(cm);
+      }
+
+      return NextResponse.json({ 
+          success: true, 
+          campaign, 
+          messagesQueued: createdMessages.length 
+      });
+    }
 
   } catch (error: any) {
     console.error("Failed to create campaign:", error);

@@ -151,6 +151,7 @@ model CampaignMessage {
   contactId   String
   messageId   String?  @unique // Link to actual Message once sent
   status      String   @default("pending") // pending, sent, failed
+  customContent String? // If set via Excel, use this specific message for this contact
   scheduledAt DateTime? // Time to send
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
