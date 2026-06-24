@@ -242,347 +242,7 @@ export async function initWhatsApp(deviceId: string, tenantId: string, forceRecr
 
       console.log(`[WA] Incoming message from ${phoneNumber}: ${incomingText}`);
 
-      // Auto-Reply Logic
-      const tenantRecord = await prisma.tenant.findUnique({ where: { id: tenantId } });
-      const rules = await prisma.autoReplyRule.findMany({
-          where: { tenantId, isActive: true }
-      });
-
-      let matchedRule = null;
-      let defaultRule = null;
-
-      for (const rule of rules) {
-          if (rule.matchType === "default") {
-              defaultRule = rule;
-              continue;
-          }
-
-          let isMatch = false;
-          const incTxt = incomingText.trim();
-          const ruleKw = rule.keyword.trim();
-
-          if (rule.matchType === "exact" && incTxt.toLowerCase() === ruleKw.toLowerCase()) {
-              isMatch = true;
-          } else if (rule.matchType === "contains" && incTxt.toLowerCase().includes(ruleKw.toLowerCase())) {
-              isMatch = true;
-          } else if (rule.matchType === "startsWith" && incTxt.toLowerCase().startsWith(ruleKw.toLowerCase())) {
-              isMatch = true;
-          } else if (rule.matchType === "regex") {
-              try {
-                const re = new RegExp(ruleKw, "i");
-                if (re.test(incTxt)) isMatch = true;
-              } catch (e) {}
-          }
-
-          if (isMatch) {
-              matchedRule = rule;
-              break; 
-          }
-      }
-
-      if (!matchedRule && incomingText.trim() !== "") {
-        try {
-          const aiConfig = await prisma.aiConfig.findUnique({ where: { deviceId } });
-          if (aiConfig && aiConfig.isActive && aiConfig.apiKey && contact?.aiEnabled !== false) {
-            // === Allow List Pre-Check ===
-            const allowCheck = await checkAllowList(deviceId, phoneNumber);
-            if (!allowCheck.allowed) {
-              if (allowCheck.message) {
-                await sendMessageWA(tenantId, phoneNumber, allowCheck.message, null, null, null, deviceId);
-              }
-              return; // Block this message entirely
-            }
-
-            const aiKnowledgeSources = await prisma.aiKnowledgeSource.findMany({ where: { deviceId } });
-            
-            let systemPrompt = aiConfig.prompt || "You are a helpful WhatsApp assistant.";
-            if (aiKnowledgeSources.length > 0) {
-              systemPrompt += "\n\nKnowledge Base (Use this to answer questions accurately):\n" + aiKnowledgeSources.map(d => `${d.title}:\n${d.content}`).join("\n\n");
-            }
-            systemPrompt += "\n\nKeep your answers concise, friendly, and suitable for WhatsApp. Answer in Indonesian unless requested otherwise.";
-
-            // === Fetch Active Integrations & Build Tools ===
-            const activeIntegrations = await prisma.aiIntegration.findMany({
-              where: { deviceId, isActive: true }
-            });
-            const toolDeclarations = buildGeminiTools(activeIntegrations);
-
-            let aiReply = "Maaf, AI sedang mengalami gangguan.";
-            let success = false;
-
-            const integrationCtx = {
-              deviceId,
-              tenantId,
-              phoneNumber,
-              contactName: msg.pushName || contact?.name || "Customer",
-              configJson: null as string | null
-            };
-
-            if (aiConfig.provider === "gemini") {
-              // Build Gemini request with function calling
-              const requestBody: any = {
-                systemInstruction: { parts: [{ text: systemPrompt }] },
-                contents: [{ parts: [{ text: incomingText }] }]
-              };
-
-              if (toolDeclarations.length > 0) {
-                requestBody.tools = [{
-                  functionDeclarations: toolDeclarations
-                }];
-              }
-
-              const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${aiConfig.apiKey}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(requestBody)
-              });
-
-              if (res.ok) {
-                const data = await res.json();
-                const candidate = data.candidates?.[0];
-                
-                if (candidate?.content?.parts) {
-                  // Check if AI wants to call a function
-                  const functionCall = candidate.content.parts.find((p: any) => p.functionCall);
-                  
-                  if (functionCall) {
-                    const fc = functionCall.functionCall;
-                    console.log(`[WA] AI called function: ${fc.name}`, fc.args);
-                    
-                    // Find which integration this belongs to
-                    const integrationName = getIntegrationNameByFunctionName(fc.name, activeIntegrations);
-                    
-                    if (integrationName) {
-                      // Get config for this integration
-                      const intRecord = activeIntegrations.find(i => i.name === integrationName);
-                      integrationCtx.configJson = intRecord?.configJson || null;
-                      
-                      let toolResult;
-                      if (intRecord?.provider === "custom" && intRecord?.webhookUrl) {
-                        toolResult = await executeCustomWebhook(intRecord, fc.args, integrationCtx);
-                      } else {
-                        toolResult = await executeIntegration(integrationName, fc.name, fc.args, integrationCtx);
-                      }
-                      
-                      // Send function result back to Gemini for a natural response
-                      const followUpBody: any = {
-                        systemInstruction: { parts: [{ text: systemPrompt }] },
-                        contents: [
-                          { role: "user", parts: [{ text: incomingText }] },
-                          { role: "model", parts: [{ functionCall: { name: fc.name, args: fc.args } }] },
-                          { role: "user", parts: [{ functionResponse: { name: fc.name, response: { result: toolResult.message } } }] }
-                        ]
-                      };
-
-                      if (toolDeclarations.length > 0) {
-                        followUpBody.tools = [{ functionDeclarations: toolDeclarations }];
-                      }
-
-                      const followUpRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${aiConfig.apiKey}`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(followUpBody)
-                      });
-                      
-                      if (followUpRes.ok) {
-                        const followUpData = await followUpRes.json();
-                        const textPart = followUpData.candidates?.[0]?.content?.parts?.find((p: any) => p.text);
-                        if (textPart) {
-                          aiReply = textPart.text;
-                          success = true;
-                        } else {
-                          aiReply = toolResult.message;
-                          success = true;
-                        }
-                      } else {
-                        aiReply = toolResult.message;
-                        success = true;
-                      }
-                    }
-                  } else {
-                    // Regular text response (no function call)
-                    const textPart = candidate.content.parts.find((p: any) => p.text);
-                    if (textPart) {
-                      aiReply = textPart.text;
-                      success = true;
-                    }
-                  }
-                }
-              } else {
-                console.error("[WA] Gemini API error:", await res.text());
-              }
-            } else if (aiConfig.provider === "openai") {
-              // Build OpenAI request with tool calls
-              const requestBody: any = {
-                model: "gpt-4o-mini",
-                messages: [
-                  { role: "system", content: systemPrompt },
-                  { role: "user", content: incomingText }
-                ]
-              };
-
-              if (toolDeclarations.length > 0) {
-                requestBody.tools = toolDeclarations.map(t => ({
-                  type: "function",
-                  function: {
-                    name: t.name,
-                    description: t.description,
-                    parameters: t.parameters
-                  }
-                }));
-              }
-
-              const res = await fetch("https://api.openai.com/v1/chat/completions", {
-                method: "POST",
-                headers: { 
-                  "Content-Type": "application/json",
-                  "Authorization": `Bearer ${aiConfig.apiKey}`
-                },
-                body: JSON.stringify(requestBody)
-              });
-              
-              if (res.ok) {
-                const data = await res.json();
-                const choice = data.choices?.[0];
-                
-                if (choice?.message?.tool_calls && choice.message.tool_calls.length > 0) {
-                  const toolCall = choice.message.tool_calls[0];
-                  const fc = toolCall.function;
-                  let fcArgs: any = {};
-                  try { fcArgs = JSON.parse(fc.arguments); } catch(e) {}
-                  
-                  const integrationName = getIntegrationNameByFunctionName(fc.name, activeIntegrations);
-                  
-                  if (integrationName) {
-                    const intRecord = activeIntegrations.find(i => i.name === integrationName);
-                    integrationCtx.configJson = intRecord?.configJson || null;
-                    
-                    let toolResult;
-                    if (intRecord?.provider === "custom" && intRecord?.webhookUrl) {
-                      toolResult = await executeCustomWebhook(intRecord, fcArgs, integrationCtx);
-                    } else {
-                      toolResult = await executeIntegration(integrationName, fc.name, fcArgs, integrationCtx);
-                    }
-                    
-                    // Send function result back to OpenAI
-                    const followUpRes = await fetch("https://api.openai.com/v1/chat/completions", {
-                      method: "POST",
-                      headers: { 
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${aiConfig.apiKey}`
-                      },
-                      body: JSON.stringify({
-                        model: "gpt-4o-mini",
-                        messages: [
-                          { role: "system", content: systemPrompt },
-                          { role: "user", content: incomingText },
-                          choice.message,
-                          { role: "tool", tool_call_id: toolCall.id, content: toolResult.message }
-                        ]
-                      })
-                    });
-                    
-                    if (followUpRes.ok) {
-                      const followUpData = await followUpRes.json();
-                      if (followUpData.choices?.[0]?.message?.content) {
-                        aiReply = followUpData.choices[0].message.content;
-                        success = true;
-                      } else {
-                        aiReply = toolResult.message;
-                        success = true;
-                      }
-                    } else {
-                      aiReply = toolResult.message;
-                      success = true;
-                    }
-                  }
-                } else if (choice?.message?.content) {
-                  aiReply = choice.message.content;
-                  success = true;
-                }
-              } else {
-                console.error("[WA] OpenAI API error:", await res.text());
-              }
-            }
-
-            if (success) {
-              await sendMessageWA(tenantId, phoneNumber, aiReply, null, null, null, deviceId);
-              
-              await prisma.aiConfig.update({
-                  where: { deviceId },
-                  data: { totalResponses: { increment: 1 } }
-              });
-
-              if (contact) {
-                  await prisma.message.create({
-                      data: {
-                          tenantId,
-                          contactId: contact.id,
-                          content: aiReply,
-                          status: "sent",
-                          direction: "outbound",
-                          whatsappId: `wa-ai-${Date.now()}`
-                      }
-                  });
-              }
-              matchedRule = true as any; // Skip default rule processing
-            }
-          }
-        } catch (err) {
-          console.error("[WA] AI Processing Error:", err);
-        }
-      }
-
-      if (!matchedRule && defaultRule && incomingText.trim() !== "") {
-          matchedRule = defaultRule;
-      }
-
-      if (matchedRule) {
-          // Personalisasi Nama
-          let finalReply = matchedRule.replyText;
-          const senderName = msg.pushName || (contact && contact.name ? contact.name : "Kak") || "Kak";
-          finalReply = finalReply.replace(/\{\{name\}\}/g, senderName);
-
-          await sendMessageWA(tenantId, phoneNumber, finalReply, matchedRule.mediaUrl, matchedRule.mediaType);
-          
-          // Save outbound auto-reply to DB ONLY if contact exists
-          if (contact) {
-              await prisma.message.create({
-                  data: {
-                      tenantId,
-                      contactId: contact.id,
-                      content: finalReply,
-                      status: "sent",
-                      direction: "outbound",
-                      whatsappId: `wa-auto-${Date.now()}`
-                  }
-              });
-          }
-      }
-
-      // Webhook Trigger
-      if (tenantRecord?.webhookUrl) {
-          try {
-              console.log(`[WA] Triggering webhook for ${tenantId} to ${tenantRecord.webhookUrl}`);
-              await fetch(tenantRecord.webhookUrl, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                      event: "message.received",
-                      data: {
-                          from: phoneNumber,
-                          name: msg.pushName || contact?.name || "Unknown",
-                          text: incomingText,
-                          mediaUrl,
-                          mediaType,
-                          timestamp: msg.messageTimestamp ? new Date(Number(msg.messageTimestamp) * 1000) : new Date()
-                      }
-                  })
-              });
-          } catch (error) {
-              console.error(`[WA] Webhook failed for ${tenantId}:`, error);
-          }
-      }
+      await processAutoReplyAndAI(tenantId, deviceId, phoneNumber, incomingText, contact, msg.pushName, msg.messageTimestamp, mediaUrl, mediaType);
     }
   });
 
@@ -817,4 +477,348 @@ export async function simulateTypingWA(tenantId: string, phoneNumber: string) {
   }, 3000);
   
   return true;
+}
+
+export async function processAutoReplyAndAI(tenantId: string, deviceId: string, phoneNumber: string, incomingText: string, contact: any, pushName?: string | null, msgTimestamp?: any, mediaUrl: string | null = null, mediaType: string | null = null) {
+      // Auto-Reply Logic
+      const tenantRecord = await prisma.tenant.findUnique({ where: { id: tenantId } });
+      const rules = await prisma.autoReplyRule.findMany({
+          where: { tenantId, isActive: true }
+      });
+
+      let matchedRule = null;
+      let defaultRule = null;
+
+      for (const rule of rules) {
+          if (rule.matchType === "default") {
+              defaultRule = rule;
+              continue;
+          }
+
+          let isMatch = false;
+          const incTxt = incomingText.trim();
+          const ruleKw = rule.keyword.trim();
+
+          if (rule.matchType === "exact" && incTxt.toLowerCase() === ruleKw.toLowerCase()) {
+              isMatch = true;
+          } else if (rule.matchType === "contains" && incTxt.toLowerCase().includes(ruleKw.toLowerCase())) {
+              isMatch = true;
+          } else if (rule.matchType === "startsWith" && incTxt.toLowerCase().startsWith(ruleKw.toLowerCase())) {
+              isMatch = true;
+          } else if (rule.matchType === "regex") {
+              try {
+                const re = new RegExp(ruleKw, "i");
+                if (re.test(incTxt)) isMatch = true;
+              } catch (e) {}
+          }
+
+          if (isMatch) {
+              matchedRule = rule;
+              break; 
+          }
+      }
+
+      if (!matchedRule && incomingText.trim() !== "") {
+        try {
+          const aiConfig = await prisma.aiConfig.findUnique({ where: { deviceId } });
+          if (aiConfig && aiConfig.isActive && aiConfig.apiKey && contact?.aiEnabled !== false) {
+            // === Allow List Pre-Check ===
+            const allowCheck = await checkAllowList(deviceId, phoneNumber);
+            if (!allowCheck.allowed) {
+              if (allowCheck.message) {
+                await sendMessageWA(tenantId, phoneNumber, allowCheck.message, null, null, null, deviceId);
+              }
+              return; // Block this message entirely
+            }
+
+            const aiKnowledgeSources = await prisma.aiKnowledgeSource.findMany({ where: { deviceId } });
+            
+            let systemPrompt = aiConfig.prompt || "You are a helpful WhatsApp assistant.";
+            if (aiKnowledgeSources.length > 0) {
+              systemPrompt += "\n\nKnowledge Base (Use this to answer questions accurately):\n" + aiKnowledgeSources.map(d => `${d.title}:\n${d.content}`).join("\n\n");
+            }
+            systemPrompt += "\n\nKeep your answers concise, friendly, and suitable for WhatsApp. Answer in Indonesian unless requested otherwise.";
+
+            // === Fetch Active Integrations & Build Tools ===
+            const activeIntegrations = await prisma.aiIntegration.findMany({
+              where: { deviceId, isActive: true }
+            });
+            const toolDeclarations = buildGeminiTools(activeIntegrations);
+
+            let aiReply = "Maaf, AI sedang mengalami gangguan.";
+            let success = false;
+
+            const integrationCtx = {
+              deviceId,
+              tenantId,
+              phoneNumber,
+              contactName: pushName || contact?.name || "Customer",
+              configJson: null as string | null
+            };
+
+            if (aiConfig.provider === "gemini") {
+              // Build Gemini request with function calling
+              const requestBody: any = {
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                contents: [{ parts: [{ text: incomingText }] }]
+              };
+
+              if (toolDeclarations.length > 0) {
+                requestBody.tools = [{
+                  functionDeclarations: toolDeclarations
+                }];
+              }
+
+              const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${aiConfig.apiKey}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(requestBody)
+              });
+
+              if (res.ok) {
+                const data = await res.json();
+                const candidate = data.candidates?.[0];
+                
+                if (candidate?.content?.parts) {
+                  // Check if AI wants to call a function
+                  const functionCall = candidate.content.parts.find((p: any) => p.functionCall);
+                  
+                  if (functionCall) {
+                    const fc = functionCall.functionCall;
+                    console.log(`[WA] AI called function: ${fc.name}`, fc.args);
+                    
+                    // Find which integration this belongs to
+                    const integrationName = getIntegrationNameByFunctionName(fc.name, activeIntegrations);
+                    
+                    if (integrationName) {
+                      // Get config for this integration
+                      const intRecord = activeIntegrations.find(i => i.name === integrationName);
+                      integrationCtx.configJson = intRecord?.configJson || null;
+                      
+                      let toolResult;
+                      if (intRecord?.provider === "custom" && intRecord?.webhookUrl) {
+                        toolResult = await executeCustomWebhook(intRecord, fc.args, integrationCtx);
+                      } else {
+                        toolResult = await executeIntegration(integrationName, fc.name, fc.args, integrationCtx);
+                      }
+                      
+                      // Send function result back to Gemini for a natural response
+                      const followUpBody: any = {
+                        systemInstruction: { parts: [{ text: systemPrompt }] },
+                        contents: [
+                          { role: "user", parts: [{ text: incomingText }] },
+                          { role: "model", parts: [{ functionCall: { name: fc.name, args: fc.args } }] },
+                          { role: "user", parts: [{ functionResponse: { name: fc.name, response: { result: toolResult.message } } }] }
+                        ]
+                      };
+
+                      if (toolDeclarations.length > 0) {
+                        followUpBody.tools = [{ functionDeclarations: toolDeclarations }];
+                      }
+
+                      const followUpRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${aiConfig.apiKey}`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(followUpBody)
+                      });
+                      
+                      if (followUpRes.ok) {
+                        const followUpData = await followUpRes.json();
+                        const textPart = followUpData.candidates?.[0]?.content?.parts?.find((p: any) => p.text);
+                        if (textPart) {
+                          aiReply = textPart.text;
+                          success = true;
+                        } else {
+                          aiReply = toolResult.message;
+                          success = true;
+                        }
+                      } else {
+                        aiReply = toolResult.message;
+                        success = true;
+                      }
+                    }
+                  } else {
+                    // Regular text response (no function call)
+                    const textPart = candidate.content.parts.find((p: any) => p.text);
+                    if (textPart) {
+                      aiReply = textPart.text;
+                      success = true;
+                    }
+                  }
+                }
+              } else {
+                console.error("[WA] Gemini API error:", await res.text());
+              }
+            } else if (aiConfig.provider === "openai") {
+              // Build OpenAI request with tool calls
+              const requestBody: any = {
+                model: "gpt-4o-mini",
+                messages: [
+                  { role: "system", content: systemPrompt },
+                  { role: "user", content: incomingText }
+                ]
+              };
+
+              if (toolDeclarations.length > 0) {
+                requestBody.tools = toolDeclarations.map(t => ({
+                  type: "function",
+                  function: {
+                    name: t.name,
+                    description: t.description,
+                    parameters: t.parameters
+                  }
+                }));
+              }
+
+              const res = await fetch("https://api.openai.com/v1/chat/completions", {
+                method: "POST",
+                headers: { 
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${aiConfig.apiKey}`
+                },
+                body: JSON.stringify(requestBody)
+              });
+              
+              if (res.ok) {
+                const data = await res.json();
+                const choice = data.choices?.[0];
+                
+                if (choice?.message?.tool_calls && choice.message.tool_calls.length > 0) {
+                  const toolCall = choice.message.tool_calls[0];
+                  const fc = toolCall.function;
+                  let fcArgs: any = {};
+                  try { fcArgs = JSON.parse(fc.arguments); } catch(e) {}
+                  
+                  const integrationName = getIntegrationNameByFunctionName(fc.name, activeIntegrations);
+                  
+                  if (integrationName) {
+                    const intRecord = activeIntegrations.find(i => i.name === integrationName);
+                    integrationCtx.configJson = intRecord?.configJson || null;
+                    
+                    let toolResult;
+                    if (intRecord?.provider === "custom" && intRecord?.webhookUrl) {
+                      toolResult = await executeCustomWebhook(intRecord, fcArgs, integrationCtx);
+                    } else {
+                      toolResult = await executeIntegration(integrationName, fc.name, fcArgs, integrationCtx);
+                    }
+                    
+                    // Send function result back to OpenAI
+                    const followUpRes = await fetch("https://api.openai.com/v1/chat/completions", {
+                      method: "POST",
+                      headers: { 
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${aiConfig.apiKey}`
+                      },
+                      body: JSON.stringify({
+                        model: "gpt-4o-mini",
+                        messages: [
+                          { role: "system", content: systemPrompt },
+                          { role: "user", content: incomingText },
+                          choice.message,
+                          { role: "tool", tool_call_id: toolCall.id, content: toolResult.message }
+                        ]
+                      })
+                    });
+                    
+                    if (followUpRes.ok) {
+                      const followUpData = await followUpRes.json();
+                      if (followUpData.choices?.[0]?.message?.content) {
+                        aiReply = followUpData.choices[0].message.content;
+                        success = true;
+                      } else {
+                        aiReply = toolResult.message;
+                        success = true;
+                      }
+                    } else {
+                      aiReply = toolResult.message;
+                      success = true;
+                    }
+                  }
+                } else if (choice?.message?.content) {
+                  aiReply = choice.message.content;
+                  success = true;
+                }
+              } else {
+                console.error("[WA] OpenAI API error:", await res.text());
+              }
+            }
+
+            if (success) {
+              await sendMessageWA(tenantId, phoneNumber, aiReply, null, null, null, deviceId);
+              
+              await prisma.aiConfig.update({
+                  where: { deviceId },
+                  data: { totalResponses: { increment: 1 } }
+              });
+
+              if (contact) {
+                  await prisma.message.create({
+                      data: {
+                          tenantId,
+                          contactId: contact.id,
+                          content: aiReply,
+                          status: "sent",
+                          direction: "outbound",
+                          whatsappId: `wa-ai-${Date.now()}`
+                      }
+                  });
+              }
+              matchedRule = true as any; // Skip default rule processing
+            }
+          }
+        } catch (err) {
+          console.error("[WA] AI Processing Error:", err);
+        }
+      }
+
+      if (!matchedRule && defaultRule && incomingText.trim() !== "") {
+          matchedRule = defaultRule;
+      }
+
+      if (matchedRule) {
+          // Personalisasi Nama
+          let finalReply = matchedRule.replyText;
+          const senderName = pushName || (contact && contact.name ? contact.name : "Kak") || "Kak";
+          finalReply = finalReply.replace(/\{\{name\}\}/g, senderName);
+
+          await sendMessageWA(tenantId, phoneNumber, finalReply, matchedRule.mediaUrl, matchedRule.mediaType);
+          
+          // Save outbound auto-reply to DB ONLY if contact exists
+          if (contact) {
+              await prisma.message.create({
+                  data: {
+                      tenantId,
+                      contactId: contact.id,
+                      content: finalReply,
+                      status: "sent",
+                      direction: "outbound",
+                      whatsappId: `wa-auto-${Date.now()}`
+                  }
+              });
+          }
+      }
+
+      // Webhook Trigger
+      if (tenantRecord?.webhookUrl) {
+          try {
+              console.log(`[WA] Triggering webhook for ${tenantId} to ${tenantRecord.webhookUrl}`);
+              await fetch(tenantRecord.webhookUrl, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                      event: "message.received",
+                      data: {
+                          from: phoneNumber,
+                          name: pushName || contact?.name || "Unknown",
+                          text: incomingText,
+                          mediaUrl,
+                          mediaType,
+                          timestamp: msgTimestamp ? new Date(Number(msgTimestamp) * 1000) : new Date()
+                      }
+                  })
+              });
+          } catch (error) {
+              console.error(`[WA] Webhook failed for ${tenantId}:`, error);
+          }
+      }
 }

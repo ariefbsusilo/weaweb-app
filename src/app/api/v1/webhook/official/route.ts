@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { processAutoReplyAndAI } from "@/lib/whatsapp";
 
 // Verification Endpoint for Meta Webhook
 export async function GET(req: Request) {
@@ -32,8 +33,10 @@ export async function POST(req: Request) {
         body.entry[0].changes[0].value.messages[0]
       ) {
         const phone_number_id = body.entry[0].changes[0].value.metadata.phone_number_id;
-        const from = body.entry[0].changes[0].value.messages[0].from;
-        const msg_body = body.entry[0].changes[0].value.messages[0].text?.body || "[Media Message]";
+        const profileName = body.entry[0].changes[0].value.contacts?.[0]?.profile?.name || "Customer";
+        const msg_obj = body.entry[0].changes[0].value.messages[0];
+        const from = msg_obj.from;
+        const msg_body = msg_obj.text?.body || "[Media Message]";
 
         // Find which tenant this phone_number_id belongs to
         const device = await prisma.device.findFirst({
@@ -47,11 +50,11 @@ export async function POST(req: Request) {
           // Save contact if doesn't exist
           const contact = await prisma.contact.upsert({
             where: { tenantId_phoneNumber: { tenantId: device.tenantId, phoneNumber: from } },
-            update: {},
+            update: { name: profileName },
             create: {
               tenantId: device.tenantId,
               phoneNumber: from,
-              name: `Official Contact ${from.substring(from.length - 4)}`
+              name: profileName
             }
           });
 
@@ -63,9 +66,20 @@ export async function POST(req: Request) {
               content: msg_body,
               status: "delivered",
               direction: "inbound",
-              whatsappId: body.entry[0].changes[0].value.messages[0].id
+              whatsappId: msg_obj.id
             }
           });
+
+          // Trigger AI & Auto Reply
+          await processAutoReplyAndAI(
+            device.tenantId, 
+            device.id, 
+            from, 
+            msg_body, 
+            contact, 
+            profileName,
+            msg_obj.timestamp
+          );
 
           // Trigger Tenant Webhook if exists
           if (device.tenant.webhookUrl) {
