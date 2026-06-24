@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, content, targetTags, scheduledAt, mediaUrl, mediaType, mode, excelRows } = body;
+    const { name, content, targetTags, scheduledAt, mediaUrl, mediaType, mode, excelRows, metaTemplateName, metaTemplateLanguage, metaTemplateVariables } = body;
 
     if (!name) {
       return NextResponse.json({ error: "Campaign name is required" }, { status: 400 });
@@ -34,6 +34,9 @@ export async function POST(req: Request) {
           name,
           content: "Excel Import Campaign", // Fallback
           status: "pending",
+          metaTemplateName,
+          metaTemplateLanguage,
+          metaTemplateVariables
         }
       });
 
@@ -84,8 +87,8 @@ export async function POST(req: Request) {
 
     } else {
       // Standard Mode
-      if (!content) {
-        return NextResponse.json({ error: "Content is required for standard campaign" }, { status: 400 });
+      if (!content && !metaTemplateName) {
+        return NextResponse.json({ error: "Content or Meta Template is required for standard campaign" }, { status: 400 });
       }
 
       // 1. Fetch matching contacts
@@ -112,12 +115,15 @@ export async function POST(req: Request) {
           data: {
               tenantId,
               name,
-              content,
+              content: content || "Meta Template Campaign",
               targetTags,
               status: "pending",
               scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
               mediaUrl,
-              mediaType
+              mediaType,
+              metaTemplateName,
+              metaTemplateLanguage,
+              metaTemplateVariables
           }
       });
 

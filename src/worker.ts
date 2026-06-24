@@ -139,6 +139,20 @@ async function startCampaignPoller() {
         if (msg.contact.name) {
           finalContent = finalContent.replace(/{{name}}/g, msg.contact.name);
         }
+        let templateOpts: any = null;
+        if (msg.campaign.metaTemplateName) {
+          let variables = msg.campaign.metaTemplateVariables;
+          if (variables && msg.contact.name) {
+            // Replace {{name}} inside the variables JSON string if needed
+            variables = variables.replace(/{{name}}/g, msg.contact.name);
+          }
+
+          templateOpts = {
+            name: msg.campaign.metaTemplateName,
+            language: msg.campaign.metaTemplateLanguage,
+            variables: variables
+          };
+        }
         
         try {
           await sendMessageWA(
@@ -146,7 +160,10 @@ async function startCampaignPoller() {
             msg.contact.phoneNumber, 
             finalContent, 
             msg.campaign.mediaUrl, 
-            msg.campaign.mediaType
+            msg.campaign.mediaType,
+            null, // location
+            undefined, // specificDeviceId
+            templateOpts
           );
           wamid = `wa-sent-${Date.now()}`;
         } catch (e: any) {

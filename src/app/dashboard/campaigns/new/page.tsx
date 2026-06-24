@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,6 +23,13 @@ export default function NewCampaignPage() {
   const [error, setError] = useState("");
   const [mode, setMode] = useState<"standard" | "excel">("standard");
   
+  // Official API Templates
+  const [officialDevices, setOfficialDevices] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [templateVariables, setTemplateVariables] = useState<Record<string, string>>({});
+  
   // Standard Mode State
   const [name, setName] = useState("");
   const [targetTags, setTargetTags] = useState("");
@@ -35,6 +42,56 @@ export default function NewCampaignPage() {
   const [excelFile, setExcelFile] = useState<File | null>(null);
   const [excelData, setExcelData] = useState<ExcelRow[]>([]);
   const [excelError, setExcelError] = useState("");
+
+  useEffect(() => {
+    const fetchDevices = async () => {
+      const res = await fetch("/api/devices");
+      const json = await res.json();
+      if (json.success) {
+        const officials = json.data.filter((d: any) => d.provider === "official");
+        setOfficialDevices(officials);
+      }
+    };
+    fetchDevices();
+  }, []);
+
+  const handleFetchTemplates = async (deviceId: string) => {
+    setLoadingTemplates(true);
+    try {
+      const res = await fetch(`/api/v1/meta-templates?deviceId=${deviceId}`);
+      const json = await res.json();
+      if (json.success) {
+        setTemplates(json.data);
+      } else {
+        setError("Failed to fetch templates: " + json.error);
+      }
+    } catch (err) {
+      setError("Error fetching templates");
+    } finally {
+      setLoadingTemplates(false);
+    }
+  };
+
+  const handleTemplateSelect = (templateId: string) => {
+    const tmpl = templates.find(t => t.id === templateId);
+    setSelectedTemplate(tmpl);
+    if (tmpl) {
+      // Find how many variables in the body text (e.g. {{1}}, {{2}})
+      const bodyComponent = tmpl.components.find((c: any) => c.type === "BODY");
+      const text = bodyComponent?.text || "";
+      const matches = text.match(/\{\{(\d+)\}\}/g) || [];
+      const vars: Record<string, string> = {};
+      matches.forEach((m: string) => {
+        vars[m] = "";
+      });
+      setTemplateVariables(vars);
+      setContent(text); // preview only
+    } else {
+      setSelectedTemplate(null);
+      setTemplateVariables({});
+      setContent("Halo {{name}}, \n\n");
+    }
+  };
 
   const downloadTemplate = () => {
     const ws = XLSX.utils.json_to_sheet([
@@ -119,7 +176,10 @@ export default function NewCampaignPage() {
         scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
         mediaUrl,
         mediaType,
-        mode
+        mode,
+        metaTemplateName: selectedTemplate?.name || null,
+        metaTemplateLanguage: selectedTemplate?.language || null,
+        metaTemplateVariables: Object.keys(templateVariables).length > 0 ? JSON.stringify(templateVariables) : null
       } : {
         name,
         mode,
@@ -238,19 +298,75 @@ export default function NewCampaignPage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-4">
                   <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex justify-between">
                     Message Content
-                    <span className="text-slate-400 dark:text-slate-500 font-normal text-xs">Variables: {'{{name}}'}</span>
+                    {!selectedTemplate && <span className="text-slate-400 dark:text-slate-500 font-normal text-xs">Variables: {'{{name}}'}</span>}
                   </label>
+                  
+                  {officialDevices.length > 0 && (
+                    <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/30 p-4 rounded-lg space-y-4">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h4 className="font-bold text-sm text-blue-800 dark:text-blue-400">Meta Message Templates</h4>
+                          <p className="text-xs text-blue-600 dark:text-blue-500">Send pre-approved templates via Official API to bypass the 24-hour limit.</p>
+                        </div>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleFetchTemplates(officialDevices[0].id)}
+                          disabled={loadingTemplates}
+                          className="bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900"
+                        >
+                          {loadingTemplates ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : "Fetch Templates"}
+                        </Button>
+                      </div>
+
+                      {templates.length > 0 && (
+                        <select 
+                          className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                          onChange={(e) => handleTemplateSelect(e.target.value)}
+                          value={selectedTemplate?.id || ""}
+                        >
+                          <option value="">-- Do not use template (Free-form text) --</option>
+                          {templates.map(t => (
+                            <option key={t.id} value={t.id}>{t.name} ({t.language})</option>
+                          ))}
+                        </select>
+                      )}
+
+                      {selectedTemplate && Object.keys(templateVariables).length > 0 && (
+                        <div className="space-y-2 mt-4 p-4 bg-white dark:bg-slate-950 rounded-md border border-slate-200 dark:border-slate-800">
+                          <h5 className="font-bold text-sm text-slate-700 dark:text-slate-300">Set Template Variables</h5>
+                          <p className="text-xs text-slate-500 mb-2">You can use {'{{name}}'} to dynamically inject the contact's name.</p>
+                          {Object.keys(templateVariables).map(variable => (
+                            <div key={variable} className="flex items-center gap-2">
+                              <span className="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">{variable}</span>
+                              <Input 
+                                size={1}
+                                className="flex-1 h-8"
+                                placeholder={`Value for ${variable}`}
+                                value={templateVariables[variable]}
+                                onChange={(e) => setTemplateVariables({...templateVariables, [variable]: e.target.value})}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <Textarea 
-                    required={mode === "standard"}
+                    required={mode === "standard" && !selectedTemplate}
+                    disabled={!!selectedTemplate}
                     rows={8}
                     placeholder="Write your message here..." 
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
-                    className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus-visible:ring-primary resize-none font-mono text-sm leading-relaxed"
+                    className={`bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus-visible:ring-primary resize-none font-mono text-sm leading-relaxed ${selectedTemplate ? 'opacity-50 cursor-not-allowed' : ''}`}
                   />
+                  {selectedTemplate && <p className="text-xs text-slate-500">Preview only. Real content will be built using the template.</p>}
                 </div>
               </>
             ) : (

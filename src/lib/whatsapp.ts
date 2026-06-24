@@ -618,7 +618,7 @@ export async function initWhatsApp(deviceId: string, tenantId: string, forceRecr
   });
 }
 
-export async function sendMessageWA(tenantId: string, phoneNumber: string, text: string, mediaUrl?: string | null, mediaType?: string | null, location?: { latitude: number, longitude: number, name?: string, address?: string } | null, specificDeviceId?: string) {
+export async function sendMessageWA(tenantId: string, phoneNumber: string, text: string, mediaUrl?: string | null, mediaType?: string | null, location?: { latitude: number, longitude: number, name?: string, address?: string } | null, specificDeviceId?: string, templateOpts?: { name: string, language: string, variables?: string } | null) {
   console.log(`[WA Send] Sending to ${phoneNumber} for tenant ${tenantId}`);
   
   let targetDeviceId = specificDeviceId;
@@ -642,37 +642,64 @@ export async function sendMessageWA(tenantId: string, phoneNumber: string, text:
   if (device?.provider === "official") {
     console.log(`[WA Send] Sending via Official API for device ${targetDeviceId}`);
     const finalPhoneNumber = phoneNumber.replace(/[^0-9]/g, '');
-    const finalText = text ? `${text}\n\n> _Sent via weaweb.app_` : `> _Sent via weaweb.app_`;
     
     let messagePayload: any = {
       messaging_product: "whatsapp",
       recipient_type: "individual",
       to: finalPhoneNumber,
-      type: "text",
-      text: {
-        preview_url: false,
-        body: finalText
-      }
     };
 
-    if (location && location.latitude && location.longitude) {
-      messagePayload.type = "location";
-      messagePayload.location = {
-        latitude: location.latitude,
-        longitude: location.longitude,
-        name: location.name || "Location",
-        address: location.address || ""
-      };
-      delete messagePayload.text;
-    } else if (mediaUrl) {
-      const typeMap: any = { image: "image", video: "video", audio: "audio", document: "document" };
-      const mType = typeMap[mediaType || "image"] || "image";
-      messagePayload.type = mType;
-      messagePayload[mType] = { link: mediaUrl };
-      if (mType === "image" || mType === "video" || mType === "document") {
-        messagePayload[mType].caption = finalText;
+    if (templateOpts && templateOpts.name) {
+      messagePayload.type = "template";
+      
+      let components: any[] = [];
+      if (templateOpts.variables) {
+        try {
+          const varsMap = JSON.parse(templateOpts.variables);
+          // Map {{1}}, {{2}} to body parameters
+          const parameters = Object.keys(varsMap).sort().map(k => ({
+            type: "text",
+            text: varsMap[k]
+          }));
+          
+          if (parameters.length > 0) {
+            components.push({
+              type: "body",
+              parameters
+            });
+          }
+        } catch(e) {}
       }
-      delete messagePayload.text;
+
+      messagePayload.template = {
+        name: templateOpts.name,
+        language: { code: templateOpts.language || "en_US" },
+        components: components.length > 0 ? components : undefined
+      };
+    } else {
+      const finalText = text ? `${text}\n\n> _Sent via weaweb.app_` : `> _Sent via weaweb.app_`;
+      messagePayload.type = "text";
+      messagePayload.text = { preview_url: false, body: finalText };
+
+      if (location && location.latitude && location.longitude) {
+        messagePayload.type = "location";
+        messagePayload.location = {
+          latitude: location.latitude,
+          longitude: location.longitude,
+          name: location.name || "Location",
+          address: location.address || ""
+        };
+        delete messagePayload.text;
+      } else if (mediaUrl) {
+        const typeMap: any = { image: "image", video: "video", audio: "audio", document: "document" };
+        const mType = typeMap[mediaType || "image"] || "image";
+        messagePayload.type = mType;
+        messagePayload[mType] = { link: mediaUrl };
+        if (mType === "image" || mType === "video" || mType === "document") {
+          messagePayload[mType].caption = finalText;
+        }
+        delete messagePayload.text;
+      }
     }
 
     const res = await fetch(`https://graph.facebook.com/v17.0/${device.officialPhoneId}/messages`, {

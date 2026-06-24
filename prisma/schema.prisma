@@ -146,6 +146,12 @@ model Campaign {
   targetTags  String?  // Comma separated tags to target
   status      String   @default("draft") // draft, running, completed
   scheduledAt DateTime? // Fonnte: Scheduling
+  
+  // Official Meta API Templates
+  metaTemplateName      String?
+  metaTemplateLanguage  String?
+  metaTemplateVariables String? // JSON string for variables mapping
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
