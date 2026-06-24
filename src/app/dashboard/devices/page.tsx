@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { 
   Plus, Search, MonitorSmartphone, Link2, CheckCheck, 
-  Smartphone, User, Diamond, Infinity, Calendar, 
+  Smartphone, User, Diamond, Infinity, Calendar, Phone,
   Bot, GitMerge, Settings2, Database, Trash2, Edit,
   RefreshCcw, Unplug, ShoppingCart, Key, MoreHorizontal
 } from "lucide-react";
@@ -212,99 +212,128 @@ export default function DevicesPage() {
               <div className="grid gap-2">
                 <Label className="font-bold text-foreground">API Provider</Label>
                 <div className="flex gap-4">
-                  <label className="flex items-center gap-2 border p-3 rounded-lg flex-1 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">
+                  <label className={`flex items-center gap-3 border-2 p-4 rounded-xl flex-1 cursor-pointer transition-all duration-200 ${provider === 'baileys' ? 'border-primary bg-primary/5 dark:bg-primary/10' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/50'}`}>
                     <input 
                       type="radio" 
                       name="provider" 
                       value="baileys" 
                       checked={provider === "baileys"}
                       onChange={() => setProvider("baileys")}
-                      className="accent-primary"
+                      className="sr-only"
                     />
+                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 ${provider === 'baileys' ? 'border-primary' : 'border-slate-300 dark:border-slate-600'}`}>
+                      {provider === 'baileys' && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
                     <div className="flex flex-col">
-                      <span className="font-bold text-sm">Baileys (QR Code)</span>
-                      <span className="text-xs text-muted-foreground">Scan from WhatsApp App</span>
+                      <span className={`font-bold text-sm ${provider === 'baileys' ? 'text-primary' : 'text-foreground'}`}>Baileys (QR Code)</span>
+                      <span className="text-xs text-muted-foreground mt-0.5">Scan from WhatsApp App</span>
                     </div>
                   </label>
-                  <label className="flex items-center gap-2 border p-3 rounded-lg flex-1 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">
+                  <label className={`flex items-center gap-3 border-2 p-4 rounded-xl flex-1 cursor-pointer transition-all duration-200 ${provider === 'official' ? 'border-primary bg-primary/5 dark:bg-primary/10' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/50'}`}>
                     <input 
                       type="radio" 
                       name="provider" 
                       value="official" 
                       checked={provider === "official"}
                       onChange={() => setProvider("official")}
-                      className="accent-primary"
+                      className="sr-only"
                     />
+                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 ${provider === 'official' ? 'border-primary' : 'border-slate-300 dark:border-slate-600'}`}>
+                      {provider === 'official' && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
                     <div className="flex flex-col">
-                      <span className="font-bold text-sm">Official Meta API</span>
-                      <span className="text-xs text-muted-foreground">WhatsApp Cloud API</span>
+                      <span className={`font-bold text-sm ${provider === 'official' ? 'text-primary' : 'text-foreground'}`}>Official Meta API</span>
+                      <span className="text-xs text-muted-foreground mt-0.5">WhatsApp Cloud API</span>
                     </div>
                   </label>
                 </div>
               </div>
 
-              <div className="grid gap-2">
+              <div className="grid gap-2 mt-2">
                 <Label htmlFor="device-name" className="font-bold text-foreground">
                   Device Name
                 </Label>
-                <Input
-                  id="device-name"
-                  placeholder="e.g. Sales WhatsApp"
-                  className="rounded-[0.35rem] font-medium"
-                  value={deviceName}
-                  onChange={(e) => setDeviceName(e.target.value)}
-                />
+                <div className="relative">
+                  <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="device-name"
+                    placeholder="e.g. Sales WhatsApp"
+                    className="rounded-lg font-medium pl-9 bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 focus-visible:ring-primary/20"
+                    value={deviceName}
+                    onChange={(e) => setDeviceName(e.target.value)}
+                    autoComplete="off"
+                  />
+                </div>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="phone-number" className="font-bold text-foreground">
                   WhatsApp Number
                 </Label>
-                <Input
-                  id="phone-number"
-                  placeholder="e.g. 6281234567890"
-                  className="rounded-[0.35rem] font-mono"
-                  type="text"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                />
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="phone-number"
+                    placeholder="e.g. 6281234567890"
+                    className="rounded-lg font-mono pl-9 bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 focus-visible:ring-primary/20"
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    autoComplete="tel"
+                  />
+                </div>
               </div>
 
               {provider === "official" && (
-                <div className="grid gap-4 mt-2 p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
-                  <h4 className="font-bold text-sm text-primary mb-1">Meta API Credentials</h4>
-                  <div className="grid gap-2">
-                    <Label htmlFor="official-token" className="font-bold text-xs">System User Access Token</Label>
-                    <Input
-                      id="official-token"
-                      type="password"
-                      placeholder="EAAI..."
-                      className="rounded-[0.35rem] font-mono text-sm"
-                      value={officialToken}
-                      onChange={(e) => setOfficialToken(e.target.value)}
-                    />
+                <div className="grid gap-4 mt-2 p-5 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border-2 border-blue-100 dark:border-blue-900/30">
+                  <div className="flex items-center gap-2 mb-1">
+                    <CheckCheck className="w-4 h-4 text-blue-500" />
+                    <h4 className="font-bold text-sm text-blue-700 dark:text-blue-400">Meta API Credentials</h4>
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="official-phone-id" className="font-bold text-xs">Phone Number ID</Label>
-                    <Input
-                      id="official-phone-id"
-                      placeholder="e.g. 10234567890"
-                      className="rounded-[0.35rem] font-mono text-sm"
-                      value={officialPhoneId}
-                      onChange={(e) => setOfficialPhoneId(e.target.value)}
-                    />
+                    <Label htmlFor="official-token" className="font-bold text-xs text-foreground">System User Access Token</Label>
+                    <div className="relative">
+                      <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="official-token"
+                        type="password"
+                        placeholder="EAAI..."
+                        className="rounded-lg font-mono text-sm pl-9 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500/20"
+                        value={officialToken}
+                        onChange={(e) => setOfficialToken(e.target.value)}
+                        autoComplete="new-password"
+                      />
+                    </div>
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="official-waba-id" className="font-bold text-xs">WhatsApp Business Account ID (WABA)</Label>
-                    <Input
-                      id="official-waba-id"
-                      placeholder="e.g. 10987654321"
-                      className="rounded-[0.35rem] font-mono text-sm"
-                      value={officialWabaId}
-                      onChange={(e) => setOfficialWabaId(e.target.value)}
-                    />
+                    <Label htmlFor="official-phone-id" className="font-bold text-xs text-foreground">Phone Number ID</Label>
+                    <div className="relative">
+                      <Database className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="official-phone-id"
+                        placeholder="e.g. 10234567890"
+                        className="rounded-lg font-mono text-sm pl-9 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500/20"
+                        value={officialPhoneId}
+                        onChange={(e) => setOfficialPhoneId(e.target.value)}
+                        autoComplete="off"
+                      />
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Note: Incoming messages require setting up Webhooks in your Meta App Dashboard pointing to <code>/api/v1/webhook/official</code>
+                  <div className="grid gap-2">
+                    <Label htmlFor="official-waba-id" className="font-bold text-xs text-foreground">WhatsApp Business Account ID (WABA)</Label>
+                    <div className="relative">
+                      <Database className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="official-waba-id"
+                        placeholder="e.g. 10987654321"
+                        className="rounded-lg font-mono text-sm pl-9 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500/20"
+                        value={officialWabaId}
+                        onChange={(e) => setOfficialWabaId(e.target.value)}
+                        autoComplete="off"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground/80 mt-2 bg-white/50 dark:bg-slate-950/50 p-3 rounded-lg border border-slate-200/50 dark:border-slate-800/50">
+                    <strong>Note:</strong> Incoming messages require setting up Webhooks in your Meta App Dashboard pointing to <code className="font-mono text-blue-600 dark:text-blue-400 bg-blue-100/50 dark:bg-blue-900/30 px-1 py-0.5 rounded">/api/v1/webhook/official</code>
                   </p>
                 </div>
               )}
