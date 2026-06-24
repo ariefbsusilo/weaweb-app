@@ -637,6 +637,60 @@ export async function sendMessageWA(tenantId: string, phoneNumber: string, text:
     throw new Error(`No connected WhatsApp device found for tenant ${tenantId}`);
   }
 
+  const device = await prisma.device.findUnique({ where: { id: targetDeviceId }});
+  
+  if (device?.provider === "official") {
+    console.log(`[WA Send] Sending via Official API for device ${targetDeviceId}`);
+    const finalPhoneNumber = phoneNumber.replace(/[^0-9]/g, '');
+    const finalText = text ? `${text}\n\n> _Sent via weaweb.app_` : `> _Sent via weaweb.app_`;
+    
+    let messagePayload: any = {
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to: finalPhoneNumber,
+      type: "text",
+      text: {
+        preview_url: false,
+        body: finalText
+      }
+    };
+
+    if (location && location.latitude && location.longitude) {
+      messagePayload.type = "location";
+      messagePayload.location = {
+        latitude: location.latitude,
+        longitude: location.longitude,
+        name: location.name || "Location",
+        address: location.address || ""
+      };
+      delete messagePayload.text;
+    } else if (mediaUrl) {
+      const typeMap: any = { image: "image", video: "video", audio: "audio", document: "document" };
+      const mType = typeMap[mediaType || "image"] || "image";
+      messagePayload.type = mType;
+      messagePayload[mType] = { link: mediaUrl };
+      if (mType === "image" || mType === "video" || mType === "document") {
+        messagePayload[mType].caption = finalText;
+      }
+      delete messagePayload.text;
+    }
+
+    const res = await fetch(`https://graph.facebook.com/v17.0/${device.officialPhoneId}/messages`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${device.officialToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(messagePayload)
+    });
+    const json = await res.json();
+    if (json.error) {
+      console.error("Meta API Error:", json.error);
+      throw new Error(json.error.message || "Failed to send via Official API");
+    }
+    return json;
+  }
+
   const sock = sessions.get(targetDeviceId);
   if (!sock) {
     console.error(`[WA Send] WhatsApp session not active in memory for device ${targetDeviceId}`);

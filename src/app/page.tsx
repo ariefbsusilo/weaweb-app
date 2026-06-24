@@ -1,12 +1,15 @@
 "use client";
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Check, ChevronRight, Zap, MessageCircle, Bot, Globe, BarChart, Database } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { motion, Variants } from 'framer-motion';
+import { motion, Variants, AnimatePresence } from 'framer-motion';
 
 export default function Home() {
+  const [entered, setEntered] = useState(false);
+
   const containerFade: Variants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
@@ -22,7 +25,59 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#020617] text-slate-900 dark:text-slate-50 selection:bg-primary/20 overflow-x-hidden">
+    <>
+      <AnimatePresence>
+        {!entered && (
+          <motion.div
+            key="cinematic-intro"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: 1.5, ease: "easeInOut" } }}
+            className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0a0a0a] text-white overflow-hidden"
+          >
+            {/* Ambient Background Glow */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(212,175,55,0.05)_0%,transparent_60%)]" />
+
+            <motion.div 
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 2, delay: 0.5, ease: "easeOut" }}
+              className="relative z-10 flex flex-col items-center"
+            >
+              <h1 className="text-5xl md:text-7xl tracking-[0.2em] font-serif uppercase mb-6 drop-shadow-2xl">
+                Weaweb<span className="text-[#D4AF37] text-3xl md:text-5xl">.id</span>
+              </h1>
+              
+              <div className="flex items-center gap-4 text-[10px] md:text-xs tracking-[0.3em] text-slate-400 mb-24 uppercase">
+                <span className="w-12 h-[1px] bg-slate-800"></span>
+                <span className="text-[#D4AF37]/50">•</span>
+                Luxury Business Experience
+                <span className="text-[#D4AF37]/50">•</span>
+                <span className="w-12 h-[1px] bg-slate-800"></span>
+              </div>
+              
+              <button 
+                onClick={() => setEntered(true)}
+                className="px-10 py-4 bg-[#D4AF37] hover:bg-[#F3E5AB] text-black text-sm tracking-[0.2em] uppercase transition-all duration-700 hover:tracking-[0.25em] rounded-full shadow-[0_0_40px_rgba(212,175,55,0.2)] hover:shadow-[0_0_60px_rgba(212,175,55,0.4)]"
+              >
+                Enter Experience <ChevronRight className="inline w-4 h-4 ml-2" />
+              </button>
+            </motion.div>
+            
+            {/* Dust Particles (CSS simulation) */}
+            <div className="absolute inset-0 pointer-events-none opacity-20 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]" />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {entered && (
+          <motion.div
+            key="main-content"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1.5, delay: 0.5 }}
+            className="min-h-screen bg-slate-50 dark:bg-[#020617] text-slate-900 dark:text-slate-50 selection:bg-primary/20 overflow-x-hidden"
+          >
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 bg-white/80 dark:bg-[#020617]/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -303,6 +358,9 @@ export default function Home() {
       <footer className="border-t border-slate-200 dark:border-slate-800 py-12 text-center text-slate-500 dark:text-slate-400 text-sm">
         <p>© 2026 Weaweb. All rights reserved.</p>
       </footer>
-    </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

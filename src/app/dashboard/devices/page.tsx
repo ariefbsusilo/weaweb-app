@@ -42,6 +42,10 @@ export default function DevicesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deviceName, setDeviceName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [provider, setProvider] = useState("baileys");
+  const [officialToken, setOfficialToken] = useState("");
+  const [officialPhoneId, setOfficialPhoneId] = useState("");
+  const [officialWabaId, setOfficialWabaId] = useState("");
 
   // QR Modal state
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
@@ -117,7 +121,14 @@ export default function DevicesPage() {
       const res = await fetch("/api/devices", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: deviceName, phoneNumber })
+        body: JSON.stringify({ 
+          name: deviceName, 
+          phoneNumber,
+          provider,
+          officialToken: provider === 'official' ? officialToken : null,
+          officialPhoneId: provider === 'official' ? officialPhoneId : null,
+          officialWabaId: provider === 'official' ? officialWabaId : null,
+        })
       });
       const json = await res.json();
       
@@ -126,6 +137,10 @@ export default function DevicesPage() {
         setIsModalOpen(false);
         setDeviceName("");
         setPhoneNumber("");
+        setProvider("baileys");
+        setOfficialToken("");
+        setOfficialPhoneId("");
+        setOfficialWabaId("");
       } else {
         alert(json.error || "Failed to add device");
       }
@@ -193,7 +208,41 @@ export default function DevicesPage() {
                 Add a new device by entering its name and WhatsApp number. You will connect it via QR code later.
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
+            <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto px-1">
+              <div className="grid gap-2">
+                <Label className="font-bold text-foreground">API Provider</Label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 border p-3 rounded-lg flex-1 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">
+                    <input 
+                      type="radio" 
+                      name="provider" 
+                      value="baileys" 
+                      checked={provider === "baileys"}
+                      onChange={() => setProvider("baileys")}
+                      className="accent-primary"
+                    />
+                    <div className="flex flex-col">
+                      <span className="font-bold text-sm">Baileys (QR Code)</span>
+                      <span className="text-xs text-muted-foreground">Scan from WhatsApp App</span>
+                    </div>
+                  </label>
+                  <label className="flex items-center gap-2 border p-3 rounded-lg flex-1 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">
+                    <input 
+                      type="radio" 
+                      name="provider" 
+                      value="official" 
+                      checked={provider === "official"}
+                      onChange={() => setProvider("official")}
+                      className="accent-primary"
+                    />
+                    <div className="flex flex-col">
+                      <span className="font-bold text-sm">Official Meta API</span>
+                      <span className="text-xs text-muted-foreground">WhatsApp Cloud API</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
               <div className="grid gap-2">
                 <Label htmlFor="device-name" className="font-bold text-foreground">
                   Device Name
@@ -219,6 +268,46 @@ export default function DevicesPage() {
                   onChange={(e) => setPhoneNumber(e.target.value)}
                 />
               </div>
+
+              {provider === "official" && (
+                <div className="grid gap-4 mt-2 p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
+                  <h4 className="font-bold text-sm text-primary mb-1">Meta API Credentials</h4>
+                  <div className="grid gap-2">
+                    <Label htmlFor="official-token" className="font-bold text-xs">System User Access Token</Label>
+                    <Input
+                      id="official-token"
+                      type="password"
+                      placeholder="EAAI..."
+                      className="rounded-[0.35rem] font-mono text-sm"
+                      value={officialToken}
+                      onChange={(e) => setOfficialToken(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="official-phone-id" className="font-bold text-xs">Phone Number ID</Label>
+                    <Input
+                      id="official-phone-id"
+                      placeholder="e.g. 10234567890"
+                      className="rounded-[0.35rem] font-mono text-sm"
+                      value={officialPhoneId}
+                      onChange={(e) => setOfficialPhoneId(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="official-waba-id" className="font-bold text-xs">WhatsApp Business Account ID (WABA)</Label>
+                    <Input
+                      id="official-waba-id"
+                      placeholder="e.g. 10987654321"
+                      className="rounded-[0.35rem] font-mono text-sm"
+                      value={officialWabaId}
+                      onChange={(e) => setOfficialWabaId(e.target.value)}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Note: Incoming messages require setting up Webhooks in your Meta App Dashboard pointing to <code>/api/v1/webhook/official</code>
+                  </p>
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button 
@@ -299,13 +388,20 @@ export default function DevicesPage() {
                   </div>
                   <div className="flex flex-col items-end gap-2">
                     <div className="flex items-center gap-2">
-                      <span className="relative flex h-2 w-2">
-                        {device.status === 'connect' && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>}
-                        <span className={`relative inline-flex rounded-full h-2 w-2 ${device.status === 'connect' ? 'bg-emerald-500' : 'bg-destructive'}`}></span>
-                      </span>
-                      <span className={`text-[10px] font-bold uppercase tracking-widest ${device.status === 'connect' ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>
-                        {device.status === 'connect' ? 'Connected' : 'Disconnected'}
-                      </span>
+                      {device.provider === 'official' ? (
+                        <Badge className="bg-blue-500 hover:bg-blue-600 text-[10px] px-1.5 py-0">OFFICIAL API</Badge>
+                      ) : (
+                        <span className="relative flex h-2 w-2">
+                          {device.status === 'connect' && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>}
+                          <span className={`relative inline-flex rounded-full h-2 w-2 ${device.status === 'connect' ? 'bg-emerald-500' : 'bg-destructive'}`}></span>
+                        </span>
+                      )}
+                      
+                      {device.provider === 'baileys' && (
+                        <span className={`text-[10px] font-bold uppercase tracking-widest ${device.status === 'connect' ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>
+                          {device.status === 'connect' ? 'Connected' : 'Disconnected'}
+                        </span>
+                      )}
                     </div>
                     <Badge variant="outline" className="text-[10px] font-bold px-2 py-0 border-border/50 bg-secondary/50">
                       <Diamond className="w-3 h-3 mr-1 text-primary" />
@@ -323,18 +419,31 @@ export default function DevicesPage() {
 
                 <div className="pt-4 border-t border-border/40 mt-auto flex items-center justify-between gap-2">
                   <div className="flex gap-2">
-                    {device.status === 'disconnect' ? (
-                      <Button 
-                        size="sm" 
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-md h-8 px-3 shadow-sm"
-                        onClick={() => handleConnect(device)}
-                      >
-                        <Link2 className="w-3.5 h-3.5 mr-1.5" /> Connect
-                      </Button>
+                    {device.provider === 'official' ? (
+                       <Button 
+                         variant="outline"
+                         size="sm" 
+                         className="font-semibold rounded-md h-8 px-3 shadow-sm border-blue-200 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400"
+                         disabled
+                       >
+                         <CheckCheck className="w-3.5 h-3.5 mr-1.5" /> API Active
+                       </Button>
                     ) : (
-                      <Button variant="destructive" size="sm" className="font-semibold rounded-md h-8 px-3 shadow-sm">
-                        <Unplug className="w-3.5 h-3.5 mr-1.5" /> Disconnect
-                      </Button>
+                      <>
+                        {device.status === 'disconnect' ? (
+                          <Button 
+                            size="sm" 
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-md h-8 px-3 shadow-sm"
+                            onClick={() => handleConnect(device)}
+                          >
+                            <Link2 className="w-3.5 h-3.5 mr-1.5" /> Connect
+                          </Button>
+                        ) : (
+                          <Button variant="destructive" size="sm" className="font-semibold rounded-md h-8 px-3 shadow-sm">
+                            <Unplug className="w-3.5 h-3.5 mr-1.5" /> Disconnect
+                          </Button>
+                        )}
+                      </>
                     )}
                     
                     <Button 

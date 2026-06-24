@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     const tenantId = (session as any)?.tenantId;
     if (!tenantId) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
-    const { name, phoneNumber } = await req.json();
+    const { name, phoneNumber, provider, officialToken, officialPhoneId, officialWabaId } = await req.json();
     
     if (!name || !phoneNumber) {
       return NextResponse.json({ success: false, error: "Name and phone number are required" }, { status: 400 });
@@ -36,7 +36,11 @@ export async function POST(req: Request) {
         tenantId,
         name,
         phoneNumber,
-        status: "disconnect"
+        status: provider === "official" ? "connect" : "disconnect", // Official is ready to use if credentials are provided
+        provider: provider || "baileys",
+        officialToken,
+        officialPhoneId,
+        officialWabaId
       }
     });
 

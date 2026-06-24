@@ -61,6 +61,13 @@ model Device {
   status      String   @default("disconnect") // disconnect, connect
   sessionId   String?  @unique // Folder name or key for Baileys auth state
   apiKey      String?  @unique // Weaweb API Key for this specific device
+  
+  // Official API Fields
+  provider         String  @default("baileys") // "baileys" or "official"
+  officialToken    String? // WhatsApp Cloud API Access Token
+  officialPhoneId  String? // WhatsApp Cloud API Phone Number ID
+  officialWabaId   String? // WhatsApp Cloud API Business Account ID
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
