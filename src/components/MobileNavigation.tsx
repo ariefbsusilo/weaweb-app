@@ -3,7 +3,7 @@
 import React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, MonitorSmartphone, MessageCircle, Megaphone, Bot } from "lucide-react"
+import { Home, MonitorSmartphone, MessageCircle, Megaphone, Bot, FileText } from "lucide-react"
 
 export function MobileNavigation() {
   const pathname = usePathname()
@@ -13,6 +13,7 @@ export function MobileNavigation() {
     { href: "/dashboard/devices", icon: MonitorSmartphone, label: "Devices" },
     { href: "/dashboard/inbox", icon: MessageCircle, label: "Inbox" },
     { href: "/dashboard/campaigns", icon: Megaphone, label: "Campaigns" },
+    { href: "/dashboard/templates", icon: FileText, label: "Templates" },
     { href: "/dashboard/chatbot", icon: Bot, label: "Chat AI" },
   ]
 

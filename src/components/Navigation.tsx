@@ -30,6 +30,7 @@ export function Navigation() {
       ]
     },
     { href: "/dashboard/campaigns", label: "Campaigns" },
+    { href: "/dashboard/templates", label: "Templates" },
     { href: "/dashboard/chatbot", label: "Chat AI" },
     { href: "/dashboard/inbox", label: "Inbox" },
     { href: "/dashboard/analytics", label: "Analytics" },
