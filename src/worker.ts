@@ -142,9 +142,28 @@ async function startCampaignPoller() {
         let templateOpts: any = null;
         if (msg.campaign.metaTemplateName) {
           let variables = msg.campaign.metaTemplateVariables;
-          if (variables && msg.contact.name) {
-            // Replace {{name}} inside the variables JSON string if needed
-            variables = variables.replace(/{{name}}/g, msg.contact.name);
+          if (variables) {
+            if (msg.contact.name) {
+              variables = variables.replace(/{{name}}/g, msg.contact.name);
+            }
+            if (msg.customContent) {
+              // Properly escape JSON strings or use regex if needed, but since it's just text replacement:
+              // Since customContent could contain newlines or quotes, it's safer to parse and rebuild, but simple replace works if not complex json.
+              // Wait, if it has quotes, parsing it is safer.
+              try {
+                const varsObj = JSON.parse(variables);
+                for (const key in varsObj) {
+                  if (varsObj[key] === "{{custom_message}}") {
+                    varsObj[key] = msg.customContent || "";
+                  } else if (varsObj[key].includes("{{custom_message}}")) {
+                    varsObj[key] = varsObj[key].replace(/{{custom_message}}/g, msg.customContent || "");
+                  }
+                }
+                variables = JSON.stringify(varsObj);
+              } catch (e) {
+                variables = variables.replace(/{{custom_message}}/g, msg.customContent || "");
+              }
+            }
           }
 
           templateOpts = {

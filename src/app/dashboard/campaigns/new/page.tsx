@@ -183,7 +183,10 @@ export default function NewCampaignPage() {
       } : {
         name,
         mode,
-        excelRows: excelData
+        excelRows: excelData,
+        metaTemplateName: selectedTemplate?.name || null,
+        metaTemplateLanguage: selectedTemplate?.language || null,
+        metaTemplateVariables: Object.keys(templateVariables).length > 0 ? JSON.stringify(templateVariables) : null
       };
 
       const res = await fetch("/api/v1/campaigns", {
@@ -258,6 +261,59 @@ export default function NewCampaignPage() {
               />
             </div>
 
+            {officialDevices.length > 0 && (
+              <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/30 p-4 rounded-lg space-y-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h4 className="font-bold text-sm text-blue-800 dark:text-blue-400">Meta Message Templates</h4>
+                    <p className="text-xs text-blue-600 dark:text-blue-500">Send pre-approved templates via Official API to bypass the 24-hour limit.</p>
+                  </div>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleFetchTemplates(officialDevices[0].id)}
+                    disabled={loadingTemplates}
+                    className="bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900"
+                  >
+                    {loadingTemplates ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : "Fetch Templates"}
+                  </Button>
+                </div>
+
+                {templates.length > 0 && (
+                  <select 
+                    className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                    onChange={(e) => handleTemplateSelect(e.target.value)}
+                    value={selectedTemplate?.id || ""}
+                  >
+                    <option value="">-- Do not use template (Free-form text) --</option>
+                    {templates.map(t => (
+                      <option key={t.id} value={t.id}>{t.name} ({t.language})</option>
+                    ))}
+                  </select>
+                )}
+
+                {selectedTemplate && Object.keys(templateVariables).length > 0 && (
+                  <div className="space-y-2 mt-4 p-4 bg-white dark:bg-slate-950 rounded-md border border-slate-200 dark:border-slate-800">
+                    <h5 className="font-bold text-sm text-slate-700 dark:text-slate-300">Set Template Variables</h5>
+                    <p className="text-xs text-slate-500 mb-2">You can use {'{{name}}'} to dynamically inject the contact's name. If using Excel mode, use {'{{custom_message}}'} to inject the Message column from Excel.</p>
+                    {Object.keys(templateVariables).map(variable => (
+                      <div key={variable} className="flex items-center gap-2">
+                        <span className="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">{variable}</span>
+                        <Input 
+                          size={1}
+                          className="flex-1 h-8"
+                          placeholder={`e.g. {{name}} or {{custom_message}}`}
+                          value={templateVariables[variable]}
+                          onChange={(e) => setTemplateVariables({...templateVariables, [variable]: e.target.value})}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {mode === "standard" ? (
               <>
                 <div className="space-y-2">
@@ -304,58 +360,7 @@ export default function NewCampaignPage() {
                     {!selectedTemplate && <span className="text-slate-400 dark:text-slate-500 font-normal text-xs">Variables: {'{{name}}'}</span>}
                   </label>
                   
-                  {officialDevices.length > 0 && (
-                    <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/30 p-4 rounded-lg space-y-4">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <h4 className="font-bold text-sm text-blue-800 dark:text-blue-400">Meta Message Templates</h4>
-                          <p className="text-xs text-blue-600 dark:text-blue-500">Send pre-approved templates via Official API to bypass the 24-hour limit.</p>
-                        </div>
-                        <Button 
-                          type="button" 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleFetchTemplates(officialDevices[0].id)}
-                          disabled={loadingTemplates}
-                          className="bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900"
-                        >
-                          {loadingTemplates ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : "Fetch Templates"}
-                        </Button>
-                      </div>
 
-                      {templates.length > 0 && (
-                        <select 
-                          className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-                          onChange={(e) => handleTemplateSelect(e.target.value)}
-                          value={selectedTemplate?.id || ""}
-                        >
-                          <option value="">-- Do not use template (Free-form text) --</option>
-                          {templates.map(t => (
-                            <option key={t.id} value={t.id}>{t.name} ({t.language})</option>
-                          ))}
-                        </select>
-                      )}
-
-                      {selectedTemplate && Object.keys(templateVariables).length > 0 && (
-                        <div className="space-y-2 mt-4 p-4 bg-white dark:bg-slate-950 rounded-md border border-slate-200 dark:border-slate-800">
-                          <h5 className="font-bold text-sm text-slate-700 dark:text-slate-300">Set Template Variables</h5>
-                          <p className="text-xs text-slate-500 mb-2">You can use {'{{name}}'} to dynamically inject the contact's name.</p>
-                          {Object.keys(templateVariables).map(variable => (
-                            <div key={variable} className="flex items-center gap-2">
-                              <span className="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">{variable}</span>
-                              <Input 
-                                size={1}
-                                className="flex-1 h-8"
-                                placeholder={`Value for ${variable}`}
-                                value={templateVariables[variable]}
-                                onChange={(e) => setTemplateVariables({...templateVariables, [variable]: e.target.value})}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
 
                   <Textarea 
                     required={mode === "standard" && !selectedTemplate}
