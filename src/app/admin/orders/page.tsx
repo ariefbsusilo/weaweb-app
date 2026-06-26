@@ -8,7 +8,7 @@ export default async function AdminOrdersPage() {
   const session = await auth()
   
   // Hardcoded super admin check or use role
-  const isSuperAdmin = session?.user?.email === "ariefbsusilo@gmail.com" || (session?.user as any)?.role === "SUPERADMIN"
+  const isSuperAdmin = session?.user?.email === "ariefbsusilo@gmail.com" || session?.user?.email === "admin@weaweb.com" || (session?.user as any)?.role === "SUPERADMIN"
   
   if (!session?.user || !isSuperAdmin) {
     redirect("/dashboard")
