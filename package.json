@@ -8,8 +8,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "npx prisma generate && next build && npx tsc src/worker.ts --outDir dist --esModuleInterop --skipLibCheck",
-    "start": "npx prisma db push --accept-data-loss && concurrently \"next start\" \"node dist/worker.js\"",
-    "start:web": "next start",
+    "start": "npx prisma db push --accept-data-loss && node server.js",
+    "start:web": "node server.js",
     "lint": "eslint",
     "worker": "node dist/worker.js"
   },
