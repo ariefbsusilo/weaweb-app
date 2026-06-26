@@ -148,9 +148,17 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            <p className="mt-8 text-center text-sm text-muted-foreground font-medium">
-              Don't have an account? <a href="#" className="text-primary hover:underline font-bold">Contact Admin</a>
-            </p>
+            <div className="mt-8 space-y-3">
+              <p className="text-center text-sm text-muted-foreground font-medium">
+                Don't have an account?{" "}
+                <a href="/register" className="text-primary hover:underline font-bold">
+                  Sign Up Free →
+                </a>
+              </p>
+              <p className="text-center text-xs text-muted-foreground/60">
+                No credit card required · 7-day free trial
+              </p>
+            </div>
           </div>
         </motion.div>
       </div>
