@@ -236,9 +236,9 @@ export default function Home() {
             <h3 className="text-xl font-bold text-white mb-2">AI Automation</h3>
             <p className="text-sm text-slate-400 mb-6">Full autopilot with AI.</p>
             <div className="mb-6 flex flex-col">
-              <span className="text-sm text-slate-500 line-through">Rp 850.000</span>
+              <span className="text-sm text-slate-500 line-through">Rp 1.500.000</span>
               <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-extrabold text-white">Rp 500k</span>
+                <span className="text-4xl font-extrabold text-white">Rp 1jt</span>
                 <span className="text-slate-400">/mo</span>
               </div>
             </div>
