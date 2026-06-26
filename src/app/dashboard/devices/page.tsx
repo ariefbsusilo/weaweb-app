@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { 
   Plus, Search, MonitorSmartphone, Link2, CheckCheck, 
   Smartphone, User, Diamond, Infinity, Calendar, Phone,
-  Bot, GitMerge, Settings2, Database, Trash2, Edit,
+  Bot, GitMerge, Settings2, Database, Trash2, Edit, Loader2,
   RefreshCcw, Unplug, ShoppingCart, Key, MoreHorizontal
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +46,52 @@ export default function DevicesPage() {
   const [officialToken, setOfficialToken] = useState("");
   const [officialPhoneId, setOfficialPhoneId] = useState("");
   const [officialWabaId, setOfficialWabaId] = useState("");
+
+  // Edit Device Modal state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingDevice, setEditingDevice] = useState<any>(null);
+  const [editName, setEditName] = useState("");
+  const [editOfficialToken, setEditOfficialToken] = useState("");
+  const [editOfficialPhoneId, setEditOfficialPhoneId] = useState("");
+  const [editOfficialWabaId, setEditOfficialWabaId] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+
+  const openEditModal = (device: any) => {
+    setEditingDevice(device);
+    setEditName(device.name || "");
+    setEditOfficialToken(device.officialToken || "");
+    setEditOfficialPhoneId(device.officialPhoneId || "");
+    setEditOfficialWabaId(device.officialWabaId || "");
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingDevice || !editName) return;
+    setEditSaving(true);
+    try {
+      const res = await fetch(`/api/devices/${editingDevice.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editName,
+          officialToken: editOfficialToken || null,
+          officialPhoneId: editOfficialPhoneId || null,
+          officialWabaId: editOfficialWabaId || null,
+        })
+      });
+      const json = await res.json();
+      if (json.success) {
+        setIsEditModalOpen(false);
+        fetchDevices();
+      } else {
+        alert(json.error || "Failed to update device");
+      }
+    } catch (e: any) {
+      alert(e.message || "Something went wrong");
+    } finally {
+      setEditSaving(false);
+    }
+  };
 
   // QR Modal state
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
@@ -497,7 +543,7 @@ export default function DevicesPage() {
                       <DropdownMenuContent align="end" className="w-48 rounded-md border-border/50 shadow-md">
                         <div className="px-2 py-1.5 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">Options</div>
                         <hr className="my-1 border-border/40" />
-                        <DropdownMenuItem className="font-medium cursor-pointer rounded-sm">
+                        <DropdownMenuItem className="font-medium cursor-pointer rounded-sm" onClick={() => openEditModal(device)}>
                           <Edit className="w-4 h-4 mr-2" /> Edit Device
                         </DropdownMenuItem>
                         <DropdownMenuItem className="font-medium cursor-pointer rounded-sm">
@@ -602,6 +648,85 @@ export default function DevicesPage() {
               {generatedApiKey ? "Regenerate API Key" : "Generate API Key Now"}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Device Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle className="font-extrabold text-xl tracking-tight">Edit Device</DialogTitle>
+            <DialogDescription className="font-medium text-muted-foreground">
+              Update configuration for <strong>{editingDevice?.phoneNumber}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto px-1">
+            <div className="grid gap-2">
+              <Label className="font-bold text-foreground">Device Name</Label>
+              <Input
+                placeholder="e.g. Sales WhatsApp"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="rounded-lg font-medium bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800"
+              />
+            </div>
+            {editingDevice?.provider === "official" && (
+              <div className="grid gap-4 mt-2 p-5 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border-2 border-blue-100 dark:border-blue-900/30">
+                <div className="flex items-center gap-2 mb-1">
+                  <CheckCheck className="w-4 h-4 text-blue-500" />
+                  <h4 className="font-bold text-sm text-blue-700 dark:text-blue-400">Meta API Credentials</h4>
+                </div>
+                <div className="grid gap-2">
+                  <Label className="font-bold text-xs text-foreground">System User Access Token</Label>
+                  <div className="relative">
+                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      type="password"
+                      placeholder="EAAI... (leave blank to keep current)"
+                      className="rounded-lg font-mono text-sm pl-9 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800"
+                      value={editOfficialToken}
+                      onChange={(e) => setEditOfficialToken(e.target.value)}
+                      autoComplete="new-password"
+                    />
+                  </div>
+                </div>
+                <div className="grid gap-2">
+                  <Label className="font-bold text-xs text-foreground">Phone Number ID</Label>
+                  <div className="relative">
+                    <Database className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="e.g. 10234567890"
+                      className="rounded-lg font-mono text-sm pl-9 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800"
+                      value={editOfficialPhoneId}
+                      onChange={(e) => setEditOfficialPhoneId(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="grid gap-2">
+                  <Label className="font-bold text-xs text-foreground">WhatsApp Business Account ID (WABA)</Label>
+                  <div className="relative">
+                    <Database className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="e.g. 10987654321"
+                      className="rounded-lg font-mono text-sm pl-9 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800"
+                      value={editOfficialWabaId}
+                      onChange={(e) => setEditOfficialWabaId(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={handleSaveEdit}
+              disabled={editSaving || !editName}
+              className="w-full bg-primary hover:bg-primary/90 rounded-[0.35rem] font-bold tracking-wide text-primary-foreground"
+            >
+              {editSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              {editSaving ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

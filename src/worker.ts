@@ -128,9 +128,12 @@ async function startCampaignPoller() {
       });
 
       for (const msg of pendingMessages) {
-        // Only process if tenant is connected
-        const tenant = await prisma.tenant.findUnique({ where: { id: msg.campaign.tenantId } });
-        if (tenant?.whatsappStatus !== "connected") continue;
+        // Only process if tenant has at least one connected device (official or baileys)
+        const tenant = await prisma.tenant.findUnique({ where: { id: msg.campaign.tenantId }, include: { devices: true } });
+        if (!tenant) continue;
+        const hasOfficialDevice = tenant.devices?.some((d: any) => d.provider === "official");
+        const hasBaileysConnected = tenant.whatsappStatus === "connected";
+        if (!hasOfficialDevice && !hasBaileysConnected) continue;
 
         console.log(`[Poller] Processing campaign message for contact: ${msg.contact.phoneNumber}`);
         let wamid = `wa-mock-${Date.now()}`;

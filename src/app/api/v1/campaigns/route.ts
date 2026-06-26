@@ -181,3 +181,29 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
 }
+
+export async function DELETE(req: Request) {
+    try {
+        const session = await auth();
+        if (!session?.user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        const tenantId = (session as any).tenantId;
+        const { searchParams } = new URL(req.url);
+        const id = searchParams.get("id");
+        if (!id) return NextResponse.json({ error: "Campaign ID required" }, { status: 400 });
+
+        const campaign = await prisma.campaign.findUnique({ where: { id } });
+        if (!campaign || campaign.tenantId !== tenantId) {
+            return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
+        }
+
+        // Delete messages first, then campaign
+        await prisma.campaignMessage.deleteMany({ where: { campaignId: id } });
+        await prisma.campaign.delete({ where: { id } });
+
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    }
+}
