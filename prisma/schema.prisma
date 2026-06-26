@@ -78,6 +78,7 @@ model Device {
   aiEvaluationLogs AiEvaluationLog[]
   aiOrchestrationNodes AiOrchestrationNode[]
   aiOrchestrationEdges AiOrchestrationEdge[]
+  campaigns   Campaign[]
 
   @@unique([tenantId, phoneNumber])
 }
@@ -151,6 +152,9 @@ model Campaign {
   metaTemplateName      String?
   metaTemplateLanguage  String?
   metaTemplateVariables String? // JSON string for variables mapping
+
+  deviceId    String?
+  device      Device?  @relation(fields: [deviceId], references: [id], onDelete: SetNull)
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

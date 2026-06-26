@@ -128,12 +128,24 @@ async function startCampaignPoller() {
       });
 
       for (const msg of pendingMessages) {
-        // Only process if tenant has at least one connected device (official or baileys)
-        const tenant = await prisma.tenant.findUnique({ where: { id: msg.campaign.tenantId }, include: { devices: true } });
+        // Check if tenant exists and device is connected (if deviceId specified)
+        const tenant = await prisma.tenant.findUnique({ where: { id: msg.campaign.tenantId } });
         if (!tenant) continue;
-        const hasOfficialDevice = tenant.devices?.some((d: any) => d.provider === "official");
-        const hasBaileysConnected = tenant.whatsappStatus === "connected";
-        if (!hasOfficialDevice && !hasBaileysConnected) continue;
+        
+        let targetDeviceId = msg.campaign.deviceId;
+        if (targetDeviceId) {
+           const targetDevice = await prisma.device.findUnique({ where: { id: targetDeviceId } });
+           if (!targetDevice || targetDevice.status !== "connect") {
+              // Wait for device to connect
+              continue;
+           }
+        } else {
+           // Fallback to old check if no deviceId specified
+           const tenantWithDevices = await prisma.tenant.findUnique({ where: { id: msg.campaign.tenantId }, include: { devices: true } });
+           const hasOfficialDevice = tenantWithDevices?.devices?.some((d: any) => d.provider === "official");
+           const hasBaileysConnected = tenantWithDevices?.whatsappStatus === "connected";
+           if (!hasOfficialDevice && !hasBaileysConnected) continue;
+        }
 
         console.log(`[Poller] Processing campaign message for contact: ${msg.contact.phoneNumber}`);
         let wamid = `wa-mock-${Date.now()}`;
@@ -184,7 +196,7 @@ async function startCampaignPoller() {
             msg.campaign.mediaUrl, 
             msg.campaign.mediaType,
             null, // location
-            undefined, // specificDeviceId
+            targetDeviceId || undefined, // specificDeviceId
             templateOpts
           );
           wamid = `wa-sent-${Date.now()}`;

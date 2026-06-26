@@ -59,15 +59,25 @@ export default function NewCampaignPage() {
   // Excel Official Mode - template vars
   const [excelTemplateVars, setExcelTemplateVars] = useState<Record<string, string>>({});
 
+  // Device Selection
+  const [allDevices, setAllDevices] = useState<any[]>([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string>("");
+
   useEffect(() => {
     const fetchDevices = async () => {
       const res = await fetch("/api/devices");
       const json = await res.json();
       if (json.success) {
-        const officials = json.data.filter((d: any) => d.provider === "official");
+        const connectedDevices = json.data.filter((d: any) => d.status === "connect");
+        setAllDevices(connectedDevices);
+        
+        const officials = connectedDevices.filter((d: any) => d.provider === "official");
         setOfficialDevices(officials);
         if (officials.length > 0) {
+          setSelectedDeviceId(officials[0].id);
           handleFetchTemplates(officials[0].id);
+        } else if (connectedDevices.length > 0) {
+          setSelectedDeviceId(connectedDevices[0].id);
         }
       }
     };
@@ -171,6 +181,34 @@ export default function NewCampaignPage() {
     reader.readAsBinaryString(f);
   };
 
+  const handleOfficialCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = ev.target?.result;
+        const workbook = XLSX.read(data, { type: "binary" });
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json<any>(worksheet);
+        if (json.length > 0) {
+           const newContacts = json.map(row => ({
+              phone: String(row.Phone || row.phone || row.Nomor || ""),
+              name: String(row.Name || row.name || row.Nama || "")
+           })).filter(c => c.phone);
+           setManualContacts(prev => {
+              const filteredPrev = prev.filter(p => p.phone);
+              return [...filteredPrev, ...newContacts, {phone: "", name: ""}]; // add 1 empty row at end
+           });
+        }
+      } catch (err: any) {
+        setError("Gagal membaca Excel: " + err.message);
+      }
+      e.target.value = ""; // reset input
+    };
+    reader.readAsBinaryString(f);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -195,6 +233,7 @@ export default function NewCampaignPage() {
         payload = {
           name,
           mode: "excel",
+          deviceId: selectedDeviceId,
           excelRows: rows,
           metaTemplateName: selectedTemplate.name,
           metaTemplateLanguage: selectedTemplate.language,
@@ -208,6 +247,7 @@ export default function NewCampaignPage() {
         payload = {
           name,
           mode: "excel",
+          deviceId: selectedDeviceId,
           excelRows: excelData,
           metaTemplateName: selectedTemplate?.name || null,
           metaTemplateLanguage: selectedTemplate?.language || null,
@@ -234,6 +274,7 @@ export default function NewCampaignPage() {
           name,
           content,
           targetTags,
+          deviceId: selectedDeviceId,
           scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
           mediaUrl,
           mediaType,
@@ -325,6 +366,27 @@ export default function NewCampaignPage() {
               </div>
             )}
 
+            {/* Device Selection */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Device Pengirim</label>
+              <select
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                value={selectedDeviceId}
+                onChange={(e) => {
+                  setSelectedDeviceId(e.target.value);
+                  if (mode === "official") handleFetchTemplates(e.target.value);
+                }}
+                required
+              >
+                <option value="">-- Pilih Device Pengirim --</option>
+                {allDevices
+                  .filter(d => mode === "official" ? d.provider === "official" : d.provider !== "official")
+                  .map(d => (
+                    <option key={d.id} value={d.id}>{d.name} ({d.phoneNumber})</option>
+                  ))}
+              </select>
+            </div>
+
             {/* Campaign Name */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Campaign Name</label>
@@ -413,9 +475,17 @@ export default function NewCampaignPage() {
                             {manualContacts.filter(c => c.phone.trim()).length} kontak
                           </span>
                         </div>
-                        <Button type="button" size="sm" variant="outline" onClick={addManualContact} className="border-border h-7 text-xs">
-                          <Plus className="w-3.5 h-3.5 mr-1" /> Tambah
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <div>
+                            <input type="file" id="official-csv" accept=".csv, .xlsx, .xls" className="hidden" onChange={handleOfficialCsvUpload} />
+                            <label htmlFor="official-csv" className="inline-flex h-7 cursor-pointer items-center justify-center rounded-md border border-border bg-transparent px-3 text-xs font-medium hover:bg-accent hover:text-accent-foreground text-foreground">
+                               <FileSpreadsheet className="w-3.5 h-3.5 mr-1" /> Import CSV
+                            </label>
+                          </div>
+                          <Button type="button" size="sm" variant="outline" onClick={addManualContact} className="border-border h-7 text-xs">
+                            <Plus className="w-3.5 h-3.5 mr-1" /> Tambah
+                          </Button>
+                        </div>
                       </div>
 
                       <div className="space-y-2 max-h-64 overflow-y-auto pr-1">

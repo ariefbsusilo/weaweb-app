@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, content, targetTags, scheduledAt, mediaUrl, mediaType, mode, excelRows, metaTemplateName, metaTemplateLanguage, metaTemplateVariables } = body;
+    const { name, content, targetTags, scheduledAt, mediaUrl, mediaType, mode, excelRows, metaTemplateName, metaTemplateLanguage, metaTemplateVariables, deviceId: reqDeviceId } = body;
 
     if (!name) {
       return NextResponse.json({ error: "Campaign name is required" }, { status: 400 });
@@ -31,6 +31,7 @@ export async function POST(req: Request) {
       const campaign = await prisma.campaign.create({
         data: {
           tenantId,
+          deviceId: reqDeviceId || null,
           name,
           content: "Excel Import Campaign", // Fallback
           status: "pending",
@@ -114,6 +115,7 @@ export async function POST(req: Request) {
       const campaign = await prisma.campaign.create({
           data: {
               tenantId,
+              deviceId: reqDeviceId || null,
               name,
               content: content || "Meta Template Campaign",
               targetTags,
