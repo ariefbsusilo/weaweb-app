@@ -31,6 +31,28 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Name and phone number are required" }, { status: 400 });
     }
 
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: { _count: { select: { devices: true } } }
+    });
+
+    if (!tenant) return NextResponse.json({ success: false, error: "Tenant not found" }, { status: 404 });
+
+    const deviceCount = tenant._count.devices;
+    const planName = tenant.planName || "free";
+
+    let maxDevices = 0;
+    if (planName === "Starter") maxDevices = 1;
+    else if (planName === "Business") maxDevices = 3;
+    else if (planName === "AI Automation" || planName === "Custom") maxDevices = 5; // Custom can be unlimited, assuming 5 for now
+
+    if (deviceCount >= maxDevices) {
+      return NextResponse.json({ 
+        success: false, 
+        error: `Device limit reached. Your ${planName} plan allows up to ${maxDevices} device(s). Please upgrade your plan.` 
+      }, { status: 403 });
+    }
+
     const device = await prisma.device.create({
       data: {
         tenantId,

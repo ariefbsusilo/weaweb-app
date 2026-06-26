@@ -160,9 +160,9 @@ export default function Home() {
             <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Starter</h3>
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">For small businesses.</p>
             <div className="mb-6 flex flex-col">
-              <span className="text-sm text-slate-400 line-through">Rp 250.000</span>
+              <span className="text-sm text-slate-400 line-through">Rp 399.000</span>
               <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-extrabold">Rp 150k</span>
+                <span className="text-4xl font-extrabold">Rp 299k</span>
                 <span className="text-slate-500 dark:text-slate-400">/mo</span>
               </div>
             </div>
@@ -180,7 +180,7 @@ export default function Home() {
                 </li>
               ))}
             </ul>
-            <Link href="/login" className="w-full">
+            <Link href="/register?plan=Starter" className="w-full">
               <Button variant="outline" className="w-full rounded-full border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">Get Started</Button>
             </Link>
           </motion.div>
@@ -196,9 +196,9 @@ export default function Home() {
             <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Business</h3>
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Scale your marketing.</p>
             <div className="mb-6 flex flex-col">
-              <span className="text-sm text-slate-400 line-through">Rp 499.000</span>
+              <span className="text-sm text-slate-400 line-through">Rp 699.000</span>
               <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-extrabold">Rp 299k</span>
+                <span className="text-4xl font-extrabold">Rp 499k</span>
                 <span className="text-slate-500 dark:text-slate-400">/mo</span>
               </div>
             </div>
@@ -216,7 +216,7 @@ export default function Home() {
                 </li>
               ))}
             </ul>
-            <Link href="/login" className="w-full">
+            <Link href="/register?plan=Business" className="w-full">
               <Button variant="outline" className="w-full rounded-full border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">Get Started</Button>
             </Link>
           </motion.div>
@@ -238,7 +238,7 @@ export default function Home() {
             <div className="mb-6 flex flex-col">
               <span className="text-sm text-slate-500 line-through">Rp 1.500.000</span>
               <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-extrabold text-white">Rp 1jt</span>
+                <span className="text-4xl font-extrabold text-white">Rp 999k</span>
                 <span className="text-slate-400">/mo</span>
               </div>
             </div>
@@ -257,7 +257,7 @@ export default function Home() {
                 </li>
               ))}
             </ul>
-            <Link href="/login" className="w-full">
+            <Link href="/register?plan=AI Automation" className="w-full">
               <Button className="w-full rounded-full bg-primary hover:bg-primary/90 text-white font-bold h-12 shadow-lg shadow-primary/30 transition-all">Upgrade Now</Button>
             </Link>
           </motion.div>

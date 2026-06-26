@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { UpgradeForm } from "./UpgradeForm"
 import { CreditCard, CheckCircle2 } from "lucide-react"
 
-export default async function UpgradePage() {
+export default async function UpgradePage({ searchParams }: { searchParams: { plan?: string } }) {
   const session = await auth()
   if (!session?.user || !(session as any).tenantId) redirect("/login")
 
@@ -19,11 +19,27 @@ export default async function UpgradePage() {
   const latestOrder = tenant.orders[0]
   const isPending = latestOrder?.status === "pending"
 
+  let planName = searchParams.plan || "AI Automation"
+  let amount = 999000
+  let description = "Unlock unlimited AI messages, multiple devices, and priority support."
+
+  if (planName === "Starter") {
+    amount = 299000
+    description = "For small businesses. Get 1 WhatsApp device and unlimited broadcasts."
+  } else if (planName === "Business") {
+    amount = 499000
+    description = "Scale your marketing with 3 WhatsApp devices and advanced auto-responder."
+  } else {
+    planName = "AI Automation"
+    amount = 999000
+    description = "Full autopilot with AI. 5 WhatsApp Devices, ChatGPT & Gemini, PDF Knowledge Base."
+  }
+
   return (
     <div className="max-w-3xl mx-auto space-y-8 animate-in fade-in zoom-in-95 duration-300">
       <div className="bg-card border border-border p-8 rounded-xl shadow-sm text-center">
-        <h1 className="text-3xl font-extrabold mb-2">Upgrade to AI Automation</h1>
-        <p className="text-muted-foreground">Unlock unlimited AI messages, multiple devices, and priority support.</p>
+        <h1 className="text-3xl font-extrabold mb-2">Upgrade to {planName}</h1>
+        <p className="text-muted-foreground">{description}</p>
       </div>
 
       {isPending ? (
@@ -44,7 +60,7 @@ export default async function UpgradePage() {
                 Payment Instructions
               </h3>
               <div className="space-y-2 text-sm">
-                <p>Transfer exactly <strong>Rp 1.000.000</strong> to:</p>
+                <p>Transfer exactly <strong>Rp {amount.toLocaleString("id-ID")}</strong> to:</p>
                 <div className="bg-background p-4 rounded border border-border font-mono text-lg font-bold">
                   BCA - 1234567890<br/>
                   A/N PT Weaweb
@@ -56,7 +72,7 @@ export default async function UpgradePage() {
 
           <div className="bg-card border border-border p-6 rounded-xl shadow-sm">
             <h3 className="text-lg font-bold mb-4">Upload Payment Proof</h3>
-            <UpgradeForm planName="AI Automation" amount={1000000} />
+            <UpgradeForm planName={planName} amount={amount} />
           </div>
         </div>
       )}
