@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { Check, X, Eye, Loader2 } from "lucide-react"
 
@@ -51,7 +50,7 @@ export function AdminOrdersClient({ initialOrders }: { initialOrders: any[] }) {
             <tbody>
               {orders.map((order) => (
                 <tr key={order.id} className="border-b border-border hover:bg-secondary/20 transition-colors">
-                  <td className="px-6 py-4">{format(new Date(order.createdAt), "dd MMM yyyy, HH:mm")}</td>
+                  <td className="px-6 py-4">{new Date(order.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</td>
                   <td className="px-6 py-4 font-medium">{order.tenant.name}</td>
                   <td className="px-6 py-4">{order.planName}</td>
                   <td className="px-6 py-4 font-mono">Rp {order.amount.toLocaleString("id-ID")}</td>
