@@ -34,7 +34,6 @@ export function Navigation() {
     { href: "/dashboard/chatbot", label: "Chat AI" },
     { href: "/dashboard/inbox", label: "Inbox" },
     { href: "/dashboard/analytics", label: "Analytics" },
-    { href: "/dashboard/upgrade", label: "Upgrade Plan" },
     { href: "/dashboard/settings", label: "Settings", icon: Settings },
   ]
 
