@@ -396,7 +396,7 @@ export default function Home() {
               <Sparkles className="w-3.5 h-3.5" /> {t.badge}
             </motion.div>
 
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] mb-6 tracking-tight">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.1] mb-6 tracking-tight">
               <span className="text-white/80">{t.hero.line1}</span><br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400">
                 {t.hero.line2}
@@ -443,25 +443,25 @@ export default function Home() {
 
           {/* Right: Mock Dashboard */}
           <motion.div initial={{ opacity: 0, x: 60 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 1, delay: 0.3 }}
-            className="relative flex justify-center lg:justify-end">
-            <motion.div animate={{ y: [0, -12, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} className="relative">
+            className="relative flex justify-center lg:justify-end mt-10 lg:mt-0">
+            <motion.div animate={{ y: [0, -12, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} className="relative w-full max-w-[320px] sm:max-w-none flex justify-center">
               <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 to-teal-500/10 rounded-2xl blur-2xl scale-110 -z-10" />
               <MockDashboard />
               {/* Floating badge 1 */}
               <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                className="absolute -left-12 top-10 bg-[#0a1520] border border-emerald-500/20 rounded-xl px-3 py-2 flex items-center gap-2 shadow-xl backdrop-blur-sm">
+                className="absolute -left-4 sm:-left-12 top-6 sm:top-10 bg-[#0a1520] border border-emerald-500/20 rounded-xl px-3 py-2 flex items-center gap-2 shadow-xl backdrop-blur-sm z-20">
                 <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="text-white/70 text-xs font-bold">AI Active</span>
               </motion.div>
               {/* Floating badge 2 */}
               <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                className="absolute -right-12 bottom-20 bg-[#0a1520] border border-teal-500/20 rounded-xl px-3 py-2 shadow-xl backdrop-blur-sm">
+                className="absolute -right-2 sm:-right-12 bottom-16 sm:bottom-20 bg-[#0a1520] border border-teal-500/20 rounded-xl px-3 py-2 shadow-xl backdrop-blur-sm hidden sm:block z-20">
                 <div className="text-emerald-400 font-black text-base">↑ 312%</div>
                 <div className="text-white/35 text-[10px]">Conversions</div>
               </motion.div>
               {/* Floating badge 3 */}
               <motion.div animate={{ y: [0, -5, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-                className="absolute -left-10 bottom-10 bg-[#0a1520] border border-purple-500/20 rounded-xl px-3 py-2 shadow-xl backdrop-blur-sm flex items-center gap-2">
+                className="absolute -left-2 sm:-left-10 bottom-6 sm:bottom-10 bg-[#0a1520] border border-purple-500/20 rounded-xl px-3 py-2 shadow-xl backdrop-blur-sm flex items-center gap-2 z-20">
                 <Bot className="w-3.5 h-3.5 text-purple-400" />
                 <span className="text-white/60 text-xs font-bold">AI Reply</span>
               </motion.div>
