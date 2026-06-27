@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
+import Logo from "@/components/Logo"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   Check, ArrowRight, Sparkles, Zap, Bot, Globe,
@@ -172,7 +173,7 @@ export default function OnboardingPage() {
       {/* Header */}
       <header className="border-b border-white/5 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <Image src="/logo.png" alt="Weaweb" width={32} height={32} className="rounded-xl" />
+          <Logo size={32} />
           <span className="font-black text-white text-lg">Weaweb</span>
         </div>
         <div className="flex items-center gap-3 text-xs text-white/30">
@@ -217,7 +218,7 @@ export default function OnboardingPage() {
                 </p>
               </div>
 
-              <div className="grid md:grid-cols-3 gap-5">
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
                 {plans.map((plan, i) => (
                   <motion.div
                     key={plan.id}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from 'next/link';
-import Image from 'next/image';
+import Logo from '@/components/Logo';
 import { Check, Zap, MessageCircle, Bot, Globe, BarChart, Database, ArrowRight, Star, Shield, Clock, Sparkles, Play, Menu, X, Users, Cpu, Lock, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -351,7 +351,7 @@ export default function Home() {
             <Link href="/" className="flex items-center gap-2.5 group">
               <div className="relative">
                 <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-400 blur-md opacity-40 group-hover:opacity-70 transition-opacity" />
-                <Image src="/logo.png" alt="Weaweb" width={36} height={36} className="relative rounded-xl group-hover:scale-105 transition-transform" />
+                <Logo size={36} className="relative group-hover:scale-105 transition-transform" />
               </div>
               <span className="text-xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400">
                 Weaweb
@@ -678,11 +678,10 @@ export default function Home() {
       <footer className="border-t border-white/5 py-10 px-5">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-400 blur-sm opacity-30 group-hover:opacity-50 transition-opacity" />
-              <Image src="/logo.png" alt="Weaweb" width={28} height={28} className="relative rounded-lg" />
+            <div className="flex items-center gap-2">
+              <Logo size={28} />
+              <span className="font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">Weaweb</span>
             </div>
-            <span className="font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">Weaweb</span>
           </Link>
           <p className="text-sm text-white/20">{t.footer}</p>
           <div className="flex items-center gap-6">
