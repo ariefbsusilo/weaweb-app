@@ -288,14 +288,17 @@ model AiOrchestrationEdge {
 }
 
 model Order {
-  id          String   @id @default(cuid())
-  tenantId    String
-  planName    String
-  amount      Int
-  status      String   @default("pending") // pending, paid, rejected
-  proofUrl    String?
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  tenantId      String
+  planName      String
+  amount        Int
+  status        String   @default("pending") // pending, paid, rejected
+  proofUrl      String?  // Legacy manual proof
+  snapToken     String?  // Midtrans snap token
+  transactionId String?  @unique // Midtrans transaction / order ID
+  paymentType   String?  // Midtrans payment type (e.g. gopay, bank_transfer)
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
