@@ -51,6 +51,10 @@ const content = {
         { name: "Rina Wati", role: "Owner · Butik Fashion Surabaya", stars: 5, text: "The AI knows our catalog perfectly. Customers get instant answers 24/7 even while we sleep." },
         { name: "Hendra K.", role: "Digital Agency · Bandung", stars: 5, text: "Managing 10 client WhatsApps from one dashboard is a game changer. Highly recommended!" },
         { name: "Maya S.", role: "E-Commerce · Tokopedia Seller", stars: 5, text: "Order confirmation automation saved us 4 hours a day. Our team can focus on growing the business now." },
+        { name: "Reza Pratama", role: "Founder · Dental Clinic", stars: 5, text: "The automated reservation system via WhatsApp is incredible. Patients no longer need to wait on calls." },
+        { name: "Dina Marlina", role: "Sales Director · Real Estate", stars: 4, text: "Broadcasting to VIP prospects is so easy. Our sales conversion rate went up by 40% thanks to this feature." },
+        { name: "Kevin Wijaya", role: "Customer Success · Fintech", stars: 5, text: "The shared inbox is a lifesaver for our CS team. No more missed customer messages." },
+        { name: "Putri Amanda", role: "Owner · Bakery & Cafe", stars: 5, text: "Automated order notifications run 24/7. Weaweb is truly like having an extra admin who never sleeps." },
       ]
     },
     pricingTitle: "Simple, transparent pricing",
@@ -108,6 +112,10 @@ const content = {
         { name: "Rina Wati", role: "Pemilik · Butik Fashion Surabaya", stars: 5, text: "AI-nya tahu katalog kami dengan sempurna. Pelanggan dapat jawaban instan 24/7 meski kami tidur." },
         { name: "Hendra K.", role: "Digital Agency · Bandung", stars: 5, text: "Kelola 10 WhatsApp klien dari satu dashboard adalah game changer. Sangat direkomendasikan!" },
         { name: "Maya S.", role: "E-Commerce · Penjual Tokopedia", stars: 5, text: "Otomasi konfirmasi pesanan hemat 4 jam per hari. Tim kami bisa fokus mengembangkan bisnis." },
+        { name: "Reza Pratama", role: "Founder · Klinik Gigi Senyum", stars: 5, text: "Sistem reservasi otomatis via WhatsApp ini luar biasa. Pasien tidak perlu antre telepon lagi." },
+        { name: "Dina Marlina", role: "Sales Director · Properti Real Estate", stars: 4, text: "Broadcast ke prospek VIP sangat mudah. Tingkat konversi penjualan kami naik 40% berkat fitur ini." },
+        { name: "Kevin Wijaya", role: "Customer Success · Fintech", stars: 5, text: "Inbox terpadu sangat membantu tim CS kami. Tidak ada lagi pesan pelanggan yang terlewat." },
+        { name: "Putri Amanda", role: "Owner · Bakery & Cafe", stars: 5, text: "Notifikasi orderan otomatis jalan 24 jam. Weaweb benar-benar seperti punya admin tambahan yang tak pernah tidur." },
       ]
     },
     pricingTitle: "Harga yang jelas & transparan",

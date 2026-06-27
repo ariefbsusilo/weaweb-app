@@ -74,7 +74,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             </div>
             <div className="flex-1 overflow-hidden">
               <p className="text-xs font-bold text-foreground truncate">{session.user.name || "Administrator"}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest truncate">Workspace</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest truncate">{tenant?.name || "Workspace"}</p>
             </div>
           </div>
           
