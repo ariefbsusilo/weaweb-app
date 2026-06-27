@@ -7,12 +7,48 @@ import { Navigation } from "@/components/Navigation"
 import { ThemeToggle } from "@/components/ThemeToggle"
 import { LogoutButton } from "@/components/LogoutButton"
 import { MobileNavigation } from "@/components/MobileNavigation"
+import { prisma } from "@/lib/prisma"
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
-  
+
   if (!session?.user || !(session as any).tenantId) {
     redirect("/login")
+  }
+
+  const tenantId = (session as any).tenantId
+
+  // ── Plan Gate ─────────────────────────────────────────────────
+  // If user is on free plan, check if they have any orders
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    include: { orders: { orderBy: { createdAt: "desc" }, take: 1 } }
+  })
+
+  if (tenant) {
+    const isSuperAdmin =
+      session?.user?.email === "ariefbsusilo@gmail.com" ||
+      session?.user?.email === "admin@weaweb.com"
+
+    if (!isSuperAdmin) {
+      const isPaid = ["Starter", "Business", "AI Automation", "Enterprise"].includes(tenant.planName)
+      const latestOrder = tenant.orders[0]
+
+      // No order at all → send to onboarding (plan selection)
+      if (!isPaid && !latestOrder) {
+        redirect("/onboarding")
+      }
+
+      // Has a pending order → redirect to waiting page
+      if (!isPaid && latestOrder?.status === "pending") {
+        redirect("/onboarding/waiting")
+      }
+
+      // Rejected order → back to onboarding to try again
+      if (!isPaid && latestOrder?.status === "rejected") {
+        redirect("/onboarding?retry=1")
+      }
+    }
   }
 
   return (

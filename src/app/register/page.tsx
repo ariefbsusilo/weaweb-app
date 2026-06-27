@@ -50,7 +50,7 @@ function RegisterContent() {
         if (result?.error) {
           setError("Failed to sign in after registration.")
         } else {
-          router.push(`/dashboard/upgrade?plan=${planParam || "Starter"}`)
+          router.push(`/onboarding`)
         }
       } else {
         const data = await res.json()
