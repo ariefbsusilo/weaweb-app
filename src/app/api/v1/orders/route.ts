@@ -13,8 +13,41 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { planName, amount, proofUrl } = body;
 
-    if (!planName || !amount || !proofUrl) {
-      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    if (!planName) {
+      return NextResponse.json({ error: "Missing planName" }, { status: 400 });
+    }
+
+    const isFree = planName === "Free Trial" || amount === 0;
+
+    // For Free Trial: auto-approve immediately, no proof needed
+    if (isFree) {
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 3); // 3-day trial
+
+      const [order] = await prisma.$transaction([
+        prisma.order.create({
+          data: {
+            tenantId,
+            planName: "Free Trial",
+            amount: 0,
+            proofUrl: null,
+            status: "paid",
+          },
+        }),
+        prisma.tenant.update({
+          where: { id: tenantId },
+          data: {
+            planName: "Starter", // Free trial gets Starter-level access
+            planExpiresAt: expiresAt,
+          },
+        }),
+      ]);
+      return NextResponse.json({ success: true, order, autoApproved: true });
+    }
+
+    // Paid plans: require proof
+    if (!proofUrl) {
+      return NextResponse.json({ error: "Proof of payment required" }, { status: 400 });
     }
 
     const order = await prisma.order.create({
@@ -23,8 +56,8 @@ export async function POST(req: Request) {
         planName,
         amount,
         proofUrl,
-        status: "pending"
-      }
+        status: "pending",
+      },
     });
 
     return NextResponse.json({ success: true, order });

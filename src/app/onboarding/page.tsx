@@ -12,6 +12,27 @@ import {
 
 const plans = [
   {
+    id: "Free Trial",
+    name: "Free Trial",
+    price: "Rp 0",
+    originalPrice: "",
+    period: "/3 hari",
+    tagline: "Coba tanpa risiko, tanpa kartu kredit",
+    badge: "✨ Gratis",
+    color: "border-emerald-500/40 hover:border-emerald-400",
+    activeColor: "border-emerald-500 bg-emerald-500/5",
+    badgeColor: "bg-emerald-500/10 text-emerald-400",
+    features: [
+      "1 Perangkat WhatsApp",
+      "100 Broadcast",
+      "Auto-Responder Dasar",
+      "Manajemen Kontak",
+      "Dukungan Komunitas",
+    ],
+    amount: 0,
+    isFree: true,
+  },
+  {
     id: "Starter",
     name: "Starter",
     price: "Rp 299.000",
@@ -84,8 +105,25 @@ export default function OnboardingPage() {
   const [error, setError] = useState("")
   const [dragOver, setDragOver] = useState(false)
 
-  const handleSelectPlan = (plan: typeof plans[0]) => {
+  const handleSelectPlan = async (plan: typeof plans[0]) => {
     setSelectedPlan(plan)
+    // Free trial: create order with amount 0 and skip payment step
+    if ((plan as any).isFree) {
+      setUploading(true)
+      try {
+        await fetch("/api/v1/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ planName: plan.id, amount: 0, proofUrl: null }),
+        })
+        setStep("done")
+      } catch {
+        setError("Gagal mengaktifkan trial. Coba lagi.")
+      } finally {
+        setUploading(false)
+      }
+      return
+    }
     setStep("payment")
   }
 
