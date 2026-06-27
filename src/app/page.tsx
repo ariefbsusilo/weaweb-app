@@ -138,6 +138,10 @@ function GridLines() {
 }
 
 function ParticleField() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
       {[...Array(70)].map((_, i) => (
@@ -303,6 +307,23 @@ const planColorMap: Record<string, { border: string; badge: string; btn: string;
     glow: "bg-amber-500/3",
   },
 };
+
+function BannerParticles() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+
+  return (
+    <>
+      {[...Array(15)].map((_, i) => (
+        <motion.div key={i} className="absolute w-1 h-1 bg-white/30 rounded-full"
+          style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%` }}
+          animate={{ opacity: [0, 1, 0], scale: [0, 1.5, 0] }}
+          transition={{ duration: 2 + Math.random() * 3, repeat: Infinity, delay: Math.random() * 4 }} />
+      ))}
+    </>
+  );
+}
 
 // ── MAIN PAGE ─────────────────────────────────────────────────────────────────
 export default function Home() {
@@ -639,12 +660,7 @@ export default function Home() {
           <div className="absolute top-0 right-0 w-72 h-72 bg-white/10 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 w-56 h-56 bg-black/10 rounded-full blur-2xl" />
           {/* Animated particles on banner */}
-          {[...Array(15)].map((_, i) => (
-            <motion.div key={i} className="absolute w-1 h-1 bg-white/30 rounded-full"
-              style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%` }}
-              animate={{ opacity: [0, 1, 0], scale: [0, 1.5, 0] }}
-              transition={{ duration: 2 + Math.random() * 3, repeat: Infinity, delay: Math.random() * 4 }} />
-          ))}
+          <BannerParticles />
           <div className="relative z-10 text-center py-20 px-8">
             <h2 className="text-4xl md:text-5xl font-black text-white mb-5">{t.ctaBanner.title}</h2>
             <p className="text-white/75 text-lg mb-10 max-w-lg mx-auto">{t.ctaBanner.subtitle}</p>
