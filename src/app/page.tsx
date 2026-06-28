@@ -537,7 +537,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-emerald-500/3 to-transparent pointer-events-none" />
         <div className="max-w-5xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
-            <span className="text-xs font-black text-emerald-400/60 uppercase tracking-widest mb-3 block">{c.howPreTitle}</span>
+            <span className="text-xs font-black text-emerald-400/60 uppercase tracking-widest mb-3 block">{t.howPreTitle}</span>
             <h2 className="text-3xl md:text-5xl font-black">{t.howTitle}</h2>
           </motion.div>
           <div className="grid md:grid-cols-3 gap-6">
@@ -561,7 +561,7 @@ export default function Home() {
       <section id="features" className="py-28 px-5 scroll-mt-20 border-t border-white/5">
         <div className="max-w-7xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
-            <span className="text-xs font-black text-emerald-400/60 uppercase tracking-widest mb-3 block">{c.featuresPreTitle}</span>
+            <span className="text-xs font-black text-emerald-400/60 uppercase tracking-widest mb-3 block">{t.featuresPreTitle}</span>
             <h2 className="text-3xl md:text-5xl font-black mb-4">{t.featuresTitle}</h2>
             <p className="text-lg text-white/40 max-w-2xl mx-auto">{t.featuresSubtitle}</p>
           </motion.div>
