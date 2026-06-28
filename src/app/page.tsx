@@ -25,12 +25,14 @@ const content = {
       { num: "99.9%", label: "Uptime SLA" },
       { num: "< 2s", label: "Avg. Response" },
     ],
+    howPreTitle: "Start in 3 steps",
     howTitle: "How Weaweb Works",
     howSteps: [
       { step: "01", title: "Connect Your WhatsApp", desc: "Scan QR or plug in official WhatsApp Business API token. Running in under 3 minutes." },
       { step: "02", title: "Import & Segment Contacts", desc: "Upload Excel or sync from your CRM. Tag, label, and group contacts however you need." },
       { step: "03", title: "Launch Campaigns & AI", desc: "Schedule bulk broadcasts or activate AI chatbot. Sit back and watch results roll in." },
     ],
+    featuresPreTitle: "Complete platform",
     featuresTitle: "Built for businesses that move fast",
     featuresSubtitle: "Every tool you need to turn WhatsApp into your highest-converting sales channel.",
     features: [
@@ -86,12 +88,14 @@ const content = {
       { num: "99,9%", label: "Uptime SLA" },
       { num: "< 2dtk", label: "Waktu Respons" },
     ],
+    howPreTitle: "Mulai dalam 3 langkah",
     howTitle: "Cara Kerja Weaweb",
     howSteps: [
       { step: "01", title: "Hubungkan WhatsApp Anda", desc: "Scan QR code atau masukkan token WhatsApp Business API. Langsung jalan dalam kurang dari 3 menit." },
       { step: "02", title: "Import & Segmentasi Kontak", desc: "Upload file Excel atau sync dari CRM Anda. Beri tag, label, dan kelompokkan sesuai kebutuhan." },
       { step: "03", title: "Jalankan Kampanye & AI", desc: "Jadwalkan broadcast massal atau aktifkan chatbot AI. Tinggal santai dan lihat hasilnya mengalir." },
     ],
+    featuresPreTitle: "Platform lengkap",
     featuresTitle: "Dibangun untuk bisnis yang bergerak cepat",
     featuresSubtitle: "Semua alat yang Anda butuhkan untuk mengubah WhatsApp menjadi channel penjualan terbaik.",
     features: [
@@ -533,7 +537,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-emerald-500/3 to-transparent pointer-events-none" />
         <div className="max-w-5xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
-            <span className="text-xs font-black text-emerald-400/60 uppercase tracking-widest mb-3 block">Mulai dalam 3 langkah</span>
+            <span className="text-xs font-black text-emerald-400/60 uppercase tracking-widest mb-3 block">{c.howPreTitle}</span>
             <h2 className="text-3xl md:text-5xl font-black">{t.howTitle}</h2>
           </motion.div>
           <div className="grid md:grid-cols-3 gap-6">
@@ -557,7 +561,7 @@ export default function Home() {
       <section id="features" className="py-28 px-5 scroll-mt-20 border-t border-white/5">
         <div className="max-w-7xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
-            <span className="text-xs font-black text-emerald-400/60 uppercase tracking-widest mb-3 block">Platform lengkap</span>
+            <span className="text-xs font-black text-emerald-400/60 uppercase tracking-widest mb-3 block">{c.featuresPreTitle}</span>
             <h2 className="text-3xl md:text-5xl font-black mb-4">{t.featuresTitle}</h2>
             <p className="text-lg text-white/40 max-w-2xl mx-auto">{t.featuresSubtitle}</p>
           </motion.div>
