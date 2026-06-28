@@ -42,7 +42,7 @@ const content = {
       { icon: BarChart, title: "Analytics Dashboard", desc: "Live delivery rates, AI chat scores, agent performance, and campaign ROI. Export to CSV.", badge: "New" },
     ],
     social: {
-      title: "Loved by businesses across Indonesia",
+      title: "Loved by businesses worldwide",
       rating: "4.9/5 from 2,000+ verified reviews",
       items: [
         { name: "Ahmad Fauzi", role: "Owner · Toko Online Jakarta", stars: 5, text: "Revenue jumped 3x in 2 months. The AI chatbot now handles 80% of inquiries without any human touching it." },
@@ -67,7 +67,7 @@ const content = {
       { name: "Enterprise", desc: "For high-volume operations", price: "Custom", originalPrice: "", period: "", features: ["Unlimited Devices", "Unlimited AI Messages", "Dedicated Server", "Custom API Access", "Account Manager", "SLA 99.9%"], cta: "Talk to Sales", href: "mailto:admin@weaweb.com", highlight: false, badge: "", color: "amber" },
     ],
     ctaBanner: { title: "Ready to put WhatsApp on autopilot?", subtitle: "Join 10,000+ businesses already growing with Weaweb. Start your free trial today.", cta: "Start Free Trial" },
-    footer: "© 2026 Weaweb · Built with ❤️ for Indonesian businesses",
+    footer: "© 2026 Weaweb · Built with ❤️ for businesses worldwide",
   },
   id: {
     nav: { login: "Masuk", signup: "Mulai Gratis", features: "Fitur", pricing: "Harga" },
@@ -103,7 +103,7 @@ const content = {
       { icon: BarChart, title: "Dashboard Analitik", desc: "Tingkat pengiriman live, skor AI chat, performa agen, dan ROI kampanye. Export ke CSV.", badge: "Baru" },
     ],
     social: {
-      title: "Dicintai bisnis di seluruh Indonesia",
+      title: "Dicintai bisnis di seluruh dunia",
       rating: "4,9/5 dari 2.000+ ulasan terverifikasi",
       items: [
         { name: "Ahmad Fauzi", role: "Pemilik · Toko Online Jakarta", stars: 5, text: "Revenue naik 3x dalam 2 bulan. Chatbot AI sekarang menangani 80% pertanyaan tanpa sentuhan manusia." },
@@ -128,7 +128,7 @@ const content = {
       { name: "Enterprise", desc: "Untuk operasi volume tinggi", price: "Kustom", originalPrice: "", period: "", features: ["Perangkat Tak Terbatas", "Pesan AI Tak Terbatas", "Server Dedicated", "Akses API Kustom", "Account Manager", "SLA 99,9%"], cta: "Hubungi Sales", href: "mailto:admin@weaweb.com", highlight: false, badge: "", color: "amber" },
     ],
     ctaBanner: { title: "Siap pasang WhatsApp pada mode autopilot?", subtitle: "Bergabung dengan 10.000+ bisnis yang sudah tumbuh bersama Weaweb. Mulai uji coba gratis hari ini.", cta: "Mulai Coba Gratis" },
-    footer: "© 2026 Weaweb · Dibuat dengan ❤️ untuk bisnis Indonesia",
+    footer: "© 2026 Weaweb · Dibuat dengan ❤️ untuk bisnis di seluruh dunia",
   }
 };
 

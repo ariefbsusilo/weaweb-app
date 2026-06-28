@@ -486,7 +486,7 @@ export default function AiConfigPage() {
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   className="min-h-[250px] max-h-[500px] overflow-y-auto font-mono text-sm resize-y rounded-xl border-border/60 bg-card p-5 shadow-sm transition-all focus:border-primary focus:ring-1 focus:ring-primary/50 group-hover:border-primary/30 leading-relaxed"
-                  placeholder="e.g. You are a helpful sales assistant for Weaweb. Always answer politely and concisely in Indonesian..."
+                  placeholder="e.g. You are a helpful sales assistant for Weaweb. Always answer politely and concisely in the user's language..."
                 />
                 <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest bg-secondary/80 px-2 py-1 rounded-md backdrop-blur-sm">
