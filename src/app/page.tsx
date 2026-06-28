@@ -45,6 +45,7 @@ const content = {
     ],
     social: {
       title: "Loved by businesses worldwide",
+      subtitle: "Thousands of businesses are already experiencing the benefits — here are their stories",
       rating: "4.9/5 from 2,000+ verified reviews",
       items: [
         { name: "Ahmad Fauzi", role: "Owner · Toko Online Jakarta", stars: 5, text: "Revenue jumped 3x in 2 months. The AI chatbot now handles 80% of inquiries without any human touching it." },
@@ -59,13 +60,14 @@ const content = {
         { name: "Putri Amanda", role: "Owner · Bakery & Cafe", stars: 5, text: "Automated order notifications run 24/7. Weaweb is truly like having an extra admin who never sleeps." },
       ]
     },
+    pricingPreTitle: "Start for free",
     pricingTitle: "Simple, transparent pricing",
     pricingSubtitle: "No hidden fees. No long-term contracts. Start free — upgrade when you're ready.",
     plans: [
-      { name: "Free Trial", desc: "Try it risk-free", price: "Rp 0", originalPrice: "", period: "/3 days", features: ["1 WhatsApp Device", "100 Broadcasts", "Basic Auto-Responder", "Contact Management", "Community Support"], cta: "Start Free Trial", href: "/register?plan=Free+Trial", highlight: false, badge: "No Card", color: "emerald" },
-      { name: "Starter", desc: "Perfect for small teams", price: "Rp 299k", originalPrice: "Rp 399k", period: "/mo", features: ["1 WhatsApp Device", "Unlimited Broadcasts", "Basic Auto-Responder", "Contact Management", "Email Support"], cta: "Get Started", href: "/register?plan=Starter", highlight: false, badge: "", color: "blue" },
-      { name: "Business", desc: "For scaling marketing teams", price: "Rp 499k", originalPrice: "Rp 699k", period: "/mo", features: ["3 WhatsApp Devices", "Unlimited Broadcasts", "Excel Import Campaigns", "Advanced Auto-Responder", "Priority Support"], cta: "Get Started", href: "/register?plan=Business", highlight: false, badge: "", color: "purple" },
-      { name: "AI Automation", desc: "Full AI autopilot mode", price: "Rp 999k", originalPrice: "Rp 1.500k", period: "/mo", features: ["5 WhatsApp Devices", "Unlimited Broadcasts", "10,000 AI Messages/mo", "ChatGPT & Gemini AI", "PDF Knowledge Base", "AI Chat Analytics"], cta: "Start Automating", href: "/register?plan=AI+Automation", highlight: true, badge: "Most Popular", color: "emerald" },
+      { name: "Free Trial", desc: "Try it risk-free", price: "$0", originalPrice: "", period: "/3 days", features: ["1 WhatsApp Device", "100 Broadcasts", "Basic Auto-Responder", "Contact Management", "Community Support"], cta: "Start Free Trial", href: "/register?plan=Free+Trial", highlight: false, badge: "No Card", color: "emerald" },
+      { name: "Starter", desc: "Perfect for small teams", price: "$19", originalPrice: "$29", period: "/mo", features: ["1 WhatsApp Device", "Unlimited Broadcasts", "Basic Auto-Responder", "Contact Management", "Email Support"], cta: "Get Started", href: "/register?plan=Starter", highlight: false, badge: "", color: "blue" },
+      { name: "Business", desc: "For scaling marketing teams", price: "$35", originalPrice: "$49", period: "/mo", features: ["3 WhatsApp Devices", "Unlimited Broadcasts", "Excel Import Campaigns", "Advanced Auto-Responder", "Priority Support"], cta: "Get Started", href: "/register?plan=Business", highlight: false, badge: "", color: "purple" },
+      { name: "AI Automation", desc: "Full AI autopilot mode", price: "$69", originalPrice: "$99", period: "/mo", features: ["5 WhatsApp Devices", "Unlimited Broadcasts", "10,000 AI Messages/mo", "ChatGPT & Gemini AI", "PDF Knowledge Base", "AI Chat Analytics"], cta: "Start Automating", href: "/register?plan=AI+Automation", highlight: true, badge: "Most Popular", color: "emerald" },
       { name: "Enterprise", desc: "For high-volume operations", price: "Custom", originalPrice: "", period: "", features: ["Unlimited Devices", "Unlimited AI Messages", "Dedicated Server", "Custom API Access", "Account Manager", "SLA 99.9%"], cta: "Talk to Sales", href: "mailto:admin@weaweb.com", highlight: false, badge: "", color: "amber" },
     ],
     ctaBanner: { title: "Ready to put WhatsApp on autopilot?", subtitle: "Join 10,000+ businesses already growing with Weaweb. Start your free trial today.", cta: "Start Free Trial" },
@@ -108,6 +110,7 @@ const content = {
     ],
     social: {
       title: "Dicintai bisnis di seluruh dunia",
+      subtitle: "Ribuan pebisnis sudah merasakan manfaatnya — ini cerita mereka",
       rating: "4,9/5 dari 2.000+ ulasan terverifikasi",
       items: [
         { name: "Ahmad Fauzi", role: "Pemilik · Toko Online Jakarta", stars: 5, text: "Revenue naik 3x dalam 2 bulan. Chatbot AI sekarang menangani 80% pertanyaan tanpa sentuhan manusia." },
@@ -122,6 +125,7 @@ const content = {
         { name: "Putri Amanda", role: "Owner · Bakery & Cafe", stars: 5, text: "Notifikasi orderan otomatis jalan 24 jam. Weaweb benar-benar seperti punya admin tambahan yang tak pernah tidur." },
       ]
     },
+    pricingPreTitle: "Mulai dari gratis",
     pricingTitle: "Harga yang jelas & transparan",
     pricingSubtitle: "Tanpa biaya tersembunyi. Tanpa kontrak jangka panjang. Mulai gratis — upgrade saat siap.",
     plans: [
@@ -595,7 +599,7 @@ export default function Home() {
               <span className="ml-2 text-white/30 text-sm font-semibold">{t.social.rating}</span>
             </div>
             <h2 className="text-3xl md:text-4xl font-black mb-4">{t.social.title}</h2>
-            <p className="text-white/30 text-sm">Ribuan pebisnis sudah merasakan manfaatnya — ini cerita mereka</p>
+            <p className="text-white/30 text-sm">{t.social.subtitle}</p>
           </motion.div>
         </div>
         <TestimonialMarquee items={t.social.items} />
@@ -608,7 +612,7 @@ export default function Home() {
       <section id="pricing" className="py-28 px-5 scroll-mt-20 border-t border-white/5">
         <div className="max-w-7xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
-            <span className="text-xs font-black text-emerald-400/60 uppercase tracking-widest mb-3 block">Mulai dari gratis</span>
+            <span className="text-xs font-black text-emerald-400/60 uppercase tracking-widest mb-3 block">{t.pricingPreTitle}</span>
             <h2 className="text-3xl md:text-5xl font-black mb-4">{t.pricingTitle}</h2>
             <p className="text-lg text-white/40">{t.pricingSubtitle}</p>
           </motion.div>
