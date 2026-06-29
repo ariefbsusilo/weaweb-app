@@ -71,7 +71,7 @@ const content = {
       { name: "Enterprise", desc: "For high-volume operations", price: "Custom", originalPrice: "", period: "", features: ["Unlimited Devices", "Unlimited AI Messages", "Dedicated Server", "Custom API Access", "Account Manager", "SLA 99.9%"], cta: "Talk to Sales", href: "mailto:admin@weaweb.com", highlight: false, badge: "", color: "amber" },
     ],
     ctaBanner: { title: "Ready to put WhatsApp on autopilot?", subtitle: "Join 10,000+ businesses already growing with Weaweb. Start your free trial today.", cta: "Start Free Trial" },
-    footer: "© 2026 Weaweb · Built with ❤️ for businesses worldwide",
+    footer: "© 2026 Weaweb by Eternals Technology · Built with ❤️ for businesses worldwide",
   },
   id: {
     nav: { login: "Masuk", signup: "Mulai Gratis", features: "Fitur", pricing: "Harga" },
@@ -136,7 +136,7 @@ const content = {
       { name: "Enterprise", desc: "Untuk operasi volume tinggi", price: "Kustom", originalPrice: "", period: "", features: ["Perangkat Tak Terbatas", "Pesan AI Tak Terbatas", "Server Dedicated", "Akses API Kustom", "Account Manager", "SLA 99,9%"], cta: "Hubungi Sales", href: "mailto:admin@weaweb.com", highlight: false, badge: "", color: "amber" },
     ],
     ctaBanner: { title: "Siap pasang WhatsApp pada mode autopilot?", subtitle: "Bergabung dengan 10.000+ bisnis yang sudah tumbuh bersama Weaweb. Mulai uji coba gratis hari ini.", cta: "Mulai Coba Gratis" },
-    footer: "© 2026 Weaweb · Dibuat dengan ❤️ untuk bisnis di seluruh dunia",
+    footer: "© 2026 Weaweb by Eternals Technology · Dibuat dengan ❤️ untuk bisnis di seluruh dunia",
   }
 };
 
