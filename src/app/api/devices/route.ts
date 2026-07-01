@@ -44,7 +44,8 @@ export async function POST(req: Request) {
     let maxDevices = 0;
     if (planName === "Starter") maxDevices = 1;
     else if (planName === "Business") maxDevices = 3;
-    else if (planName === "AI Automation" || planName === "Custom") maxDevices = 5; // Custom can be unlimited, assuming 5 for now
+    else if (planName === "AI Automation") maxDevices = 5;
+    else if (planName === "Enterprise" || planName === "Custom") maxDevices = 9999;
 
     if (deviceCount >= maxDevices) {
       return NextResponse.json({ 

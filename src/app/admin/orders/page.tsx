@@ -1,16 +1,20 @@
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
+import { cookies } from "next/headers"
 import { prisma } from "@/lib/prisma"
 import { AdminDashboardClient } from "./AdminDashboardClient"
 
 export default async function AdminDashboardPage() {
   const session = await auth()
+  const cookieStore = await cookies()
+  const hasAdminCookie = cookieStore.get("weaweb_admin_session")?.value === "true"
   const isSuperAdmin =
+    hasAdminCookie ||
     session?.user?.email === "ariefbsusilo@gmail.com" ||
     session?.user?.email === "admin@weaweb.com" ||
     (session?.user as any)?.role === "SUPERADMIN"
 
-  if (!session?.user || !isSuperAdmin) redirect("/dashboard")
+  if (!isSuperAdmin) redirect("/admin/login")
 
   // ── Aggregate Stats ──────────────────────────────────────────
   const [
