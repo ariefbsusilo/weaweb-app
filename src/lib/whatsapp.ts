@@ -63,7 +63,7 @@ export async function initWhatsApp(deviceId: string, tenantId: string, forceRecr
     logger,
     printQRInTerminal: false,
     auth: state,
-    syncFullHistory: false,
+    syncFullHistory: true, // Sync everything!
     browser: ["WEAWEB SaaS", "Chrome", "1.0.0"],
   });
 
@@ -112,8 +112,93 @@ export async function initWhatsApp(deviceId: string, tenantId: string, forceRecr
   });
 
   sock.ev.on("messaging-history.set", async ({ chats, contacts, messages }) => {
-    // History sync is ignored to prevent flooding Weaweb with personal WhatsApp data
-    console.log(`[WA] Received history sync with ${messages?.length || 0} messages, ignoring to prevent data flood.`);
+    console.log(`[WA] Received history sync with ${messages?.length || 0} messages, ${contacts?.length || 0} contacts, ${chats?.length || 0} chats.`);
+    
+    // Background processing to not block the event loop
+    setImmediate(async () => {
+      try {
+        console.log("[WA] Starting to sync historical contacts and chats...");
+        for (const chat of chats || []) {
+           const jid = chat.id;
+           if (!jid || jid.includes("status@broadcast") || jid.includes("@newsletter")) continue;
+           
+           let phoneNumber = jid.split("@")[0];
+           if (jid.includes("@lid") || jid.includes("@g.us")) phoneNumber = jid;
+           
+           const name = chat.name || contacts?.find(c => c.id === jid)?.name || contacts?.find(c => c.id === jid)?.notify || phoneNumber;
+
+           const existing = await prisma.contact.findFirst({
+             where: { tenantId, OR: [ { phoneNumber }, { phoneNumber: `0${phoneNumber.substring(2)}` } ] }
+           });
+           
+           if (!existing) {
+             await prisma.contact.create({
+               data: { tenantId, phoneNumber, name }
+             });
+           }
+        }
+        
+        console.log(`[WA] Starting to sync ${messages?.length || 0} historical messages...`);
+        for (const msg of messages || []) {
+           if (!msg.message) continue;
+           
+           const remoteJid = msg.key.remoteJid;
+           if (!remoteJid || remoteJid === "status@broadcast" || remoteJid.includes("@newsletter")) continue;
+           
+           let phoneNumber = remoteJid.split("@")[0];
+           if (remoteJid.includes("@lid") || remoteJid.includes("@g.us")) phoneNumber = remoteJid;
+           
+           const incomingText = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
+           
+           let mediaUrl = null;
+           let mediaType = null;
+           
+           if (msg.message.imageMessage || msg.message.documentMessage || msg.message.videoMessage || msg.message.audioMessage) {
+               try {
+                 const buffer = await downloadMediaMessage(msg, 'buffer', {}, { logger, reuploadRequest: sock.updateMediaMessage });
+                 const ext = msg.message.imageMessage ? 'jpg' : msg.message.videoMessage ? 'mp4' : msg.message.audioMessage ? 'mp3' : 'pdf';
+                 mediaType = msg.message.imageMessage ? 'image' : msg.message.videoMessage ? 'video' : msg.message.audioMessage ? 'audio' : 'document';
+                 const filename = `media_hist_${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
+                 const uploadsDir = path.join(process.cwd(), "public", "uploads");
+                 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+                 await fs.promises.writeFile(path.join(uploadsDir, filename), buffer);
+                 mediaUrl = `/uploads/${filename}`;
+               } catch (e) {
+                 console.log("[WA] Media download failed for historical message, keeping text only.");
+               }
+           }
+           
+           const contact = await prisma.contact.findFirst({
+             where: { tenantId, phoneNumber }
+           });
+           
+           if (contact) {
+              const msgTimestamp = msg.messageTimestamp ? (typeof msg.messageTimestamp === 'number' ? msg.messageTimestamp : (msg.messageTimestamp as any).low || Math.floor(Date.now()/1000)) * 1000 : Date.now();
+              const existingMsg = await prisma.message.findFirst({ where: { tenantId, whatsappId: msg.key.id } });
+              
+              if (!existingMsg) {
+                 await prisma.message.create({
+                   data: {
+                     tenantId,
+                     contactId: contact.id,
+                     content: incomingText || (mediaType ? `[${mediaType}]` : ""),
+                     mediaUrl,
+                     mediaType,
+                     status: msg.key.fromMe ? "sent" : "delivered",
+                     direction: msg.key.fromMe ? "outbound" : "inbound",
+                     whatsappId: msg.key.id || `wa-hist-${Date.now()}-${Math.random()}`,
+                     createdAt: new Date(msgTimestamp),
+                     senderName: msg.pushName || null
+                   }
+                 });
+              }
+           }
+        }
+        console.log(`[WA] History sync processing complete.`);
+      } catch (err) {
+        console.error(`[WA] Error processing history:`, err);
+      }
+    });
   });
 
   sock.ev.on("messages.upsert", async (m) => {
@@ -122,10 +207,7 @@ export async function initWhatsApp(deviceId: string, tenantId: string, forceRecr
       if (!msg.message) continue;
 
       const msgTimestamp = msg.messageTimestamp ? (typeof msg.messageTimestamp === 'number' ? msg.messageTimestamp : (msg.messageTimestamp as any).low || (msg.messageTimestamp as any).toNumber?.() || Math.floor(Date.now() / 1000)) * 1000 : Date.now();
-      // Ignore messages older than 2 minutes to prevent syncing old unread history on connection
-      if (Date.now() - msgTimestamp > 2 * 60 * 1000) {
-        continue;
-      }
+      // We removed the 2 minute check to allow syncing old messages if they come through upsert
       
       const remoteJid = msg.key.remoteJid;
       if (!remoteJid || remoteJid === "status@broadcast" || remoteJid.includes("@newsletter")) continue; // Ignore status, channels
