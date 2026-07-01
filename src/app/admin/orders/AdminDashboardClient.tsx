@@ -60,18 +60,45 @@ function StatusBadge({ status }: { status: string }) {
   )
 }
 
-export function AdminDashboardClient({ stats, orders: initialOrders, tenants }: {
+export function AdminDashboardClient({ stats, orders: initialOrders, tenants: initialTenants }: {
   stats: any
   orders: any[]
   tenants: any[]
 }) {
   const [tab, setTab] = useState<Tab>("overview")
   const [orders, setOrders] = useState(initialOrders)
+  const [tenants, setTenants] = useState(initialTenants)
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [planFilter, setPlanFilter] = useState("all")
+  
+  const [editingPlanTenantId, setEditingPlanTenantId] = useState<string | null>(null)
+  const [editPlanState, setEditPlanState] = useState({ planName: "", planExpiresAt: "" })
+  const [savingPlan, setSavingPlan] = useState(false)
+
+  const handleSavePlan = async (tenantId: string) => {
+    setSavingPlan(true)
+    try {
+      const res = await fetch("/api/admin/tenants/plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tenantId,
+          planName: editPlanState.planName,
+          planExpiresAt: editPlanState.planExpiresAt || null,
+        }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setTenants(prev => prev.map(t => t.id === tenantId ? { ...t, planName: data.tenant.planName, planExpiresAt: data.tenant.planExpiresAt } : t))
+      }
+    } finally {
+      setSavingPlan(false)
+      setEditingPlanTenantId(null)
+    }
+  }
 
   const handleAction = async (orderId: string, action: "approve" | "reject") => {
     setLoadingId(orderId)
@@ -420,7 +447,21 @@ export function AdminDashboardClient({ stats, orders: initialOrders, tenants }: 
 
                       {/* Plan */}
                       <div className="flex flex-col items-start gap-1">
-                        <StatusBadge status={t.planName} />
+                        <div className="flex items-center gap-2">
+                          <StatusBadge status={t.planName} />
+                          <button
+                            onClick={() => {
+                              setEditingPlanTenantId(t.id)
+                              setEditPlanState({
+                                planName: t.planName,
+                                planExpiresAt: t.planExpiresAt ? new Date(t.planExpiresAt).toISOString().split('T')[0] : ""
+                              })
+                            }}
+                            className="text-[10px] bg-white/5 hover:bg-white/10 px-2 py-0.5 rounded text-white/50 transition-colors"
+                          >
+                            Edit
+                          </button>
+                        </div>
                         {t.planExpiresAt && (
                           <span className={`text-[10px] font-medium ${isExpired ? "text-red-400" : "text-white/25"}`}>
                             {isExpired ? "⚠ Expired" : `Expires ${new Date(t.planExpiresAt).toLocaleDateString("id-ID")}`}
@@ -569,6 +610,71 @@ export function AdminDashboardClient({ stats, orders: initialOrders, tenants }: 
               </div>
               <div className="p-4 bg-black/20 flex justify-center">
                 <img src={previewImage} alt="Proof" className="max-w-full max-h-[70vh] object-contain rounded-xl" />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Plan Modal */}
+      <AnimatePresence>
+        {editingPlanTenantId && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="relative max-w-sm w-full bg-[#0d1117] rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
+            >
+              <div className="px-5 py-4 border-b border-white/8">
+                <h3 className="font-black text-white">Edit Plan</h3>
+              </div>
+              <div className="p-5 space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-white/50">Plan Name</label>
+                  <select
+                    value={editPlanState.planName}
+                    onChange={e => setEditPlanState({ ...editPlanState, planName: e.target.value })}
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500/50"
+                  >
+                    <option value="free">Free</option>
+                    <option value="Starter">Starter</option>
+                    <option value="Business">Business</option>
+                    <option value="AI Automation">AI Automation</option>
+                    <option value="Enterprise">Enterprise</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-white/50">Expiration Date (Optional)</label>
+                  <input
+                    type="date"
+                    value={editPlanState.planExpiresAt}
+                    onChange={e => setEditPlanState({ ...editPlanState, planExpiresAt: e.target.value })}
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500/50 [color-scheme:dark]"
+                  />
+                </div>
+              </div>
+              <div className="p-4 bg-white/3 border-t border-white/8 flex gap-3 justify-end">
+                <button
+                  onClick={() => setEditingPlanTenantId(null)}
+                  disabled={savingPlan}
+                  className="px-4 py-2 rounded-lg text-xs font-bold text-white/50 hover:text-white transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleSavePlan(editingPlanTenantId)}
+                  disabled={savingPlan}
+                  className="px-4 py-2 rounded-lg text-xs font-bold bg-emerald-500 text-white hover:bg-emerald-400 transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {savingPlan && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  Save Changes
+                </button>
               </div>
             </motion.div>
           </motion.div>
