@@ -148,6 +148,13 @@ export async function initWhatsApp(deviceId: string, tenantId: string, forceRecr
            let phoneNumber = remoteJid.split("@")[0];
            if (remoteJid.includes("@lid") || remoteJid.includes("@g.us")) phoneNumber = remoteJid;
            
+           const msgTimestampRaw = msg.messageTimestamp ? (typeof msg.messageTimestamp === 'number' ? msg.messageTimestamp : (msg.messageTimestamp as any).low || Math.floor(Date.now()/1000)) * 1000 : Date.now();
+           const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
+           
+           if (msgTimestampRaw < threeDaysAgo) {
+               continue;
+           }
+
            const incomingText = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
            
            let mediaUrl = null;
@@ -173,7 +180,7 @@ export async function initWhatsApp(deviceId: string, tenantId: string, forceRecr
            });
            
            if (contact) {
-              const msgTimestamp = msg.messageTimestamp ? (typeof msg.messageTimestamp === 'number' ? msg.messageTimestamp : (msg.messageTimestamp as any).low || Math.floor(Date.now()/1000)) * 1000 : Date.now();
+              const msgTimestamp = msgTimestampRaw;
               const existingMsg = await prisma.message.findFirst({ where: { tenantId, whatsappId: msg.key.id } });
               
               if (!existingMsg) {
